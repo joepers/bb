@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Better Buy — Unit Cost Comparator</title>
+  <title>Better Buy – Unit Cost Comparator</title>
   <meta name="description" content="A single‑file web app to compare grocery unit prices and spot the better buy." />
   <style>
     :root {
@@ -88,7 +88,7 @@
         <div class="dot" aria-hidden="true"></div>
         <div>
           <div class="brand">Better Buy <span class="badge">Unit Cost</span></div>
-          <div class="sub">Compare groceries by unit price — quickly see the best value.</div>
+          <div class="sub">Compare groceries by unit price – quickly see the best value.</div>
         </div>
       </div>
       <div class="controls card" role="region" aria-label="Controls">
@@ -126,6 +126,20 @@
       </div>
     </header>
 
+    <div id="savingsSpotlight" class="card" style="display:none; margin-bottom:16px; background:linear-gradient(135deg, #052e17, #0b4f2a); border-color:#0b4f2a;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px; color:#9fb2d1; margin-bottom:4px;">💰 COST SAVINGS SPOTLIGHT</div>
+          <div style="font-size:24px; font-weight:700; color:#c3f7d7; margin-bottom:4px;" id="savingsAmount">—</div>
+          <div style="font-size:14px; color:#9fb2d1;" id="savingsDesc">—</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px; color:#9fb2d1; margin-bottom:2px;">Savings percentage</div>
+          <div style="font-size:32px; font-weight:800; color:#c3f7d7;" id="savingsPct">—</div>
+        </div>
+      </div>
+    </div>
+
     <section class="card" aria-live="polite">
       <table>
         <thead>
@@ -161,11 +175,11 @@
         <li><strong>Sort by best</strong> to bring the lowest unit price to the top. The best price is highlighted.</li>
         <li>Everything saves automatically in your browser (no internet needed). Use <strong>Export/Import</strong> to move lists between devices.</li>
       </ul>
-      <p class="sub">Supported units: <em>Weight</em> — mg, g, kg, oz, lb. <em>Volume</em> — ml, l, floz, cup, pt, qt, gal. <em>Count</em> — each.</p>
+      <p class="sub">Supported units: <em>Weight</em> – mg, g, kg, oz, lb. <em>Volume</em> – ml, l, floz, cup, pt, qt, gal. <em>Count</em> – each.</p>
     </details>
 
     <footer class="sub" style="margin-top: 10px;">
-      Made with ♥ to help you make the better buy. — <span class="badge">No tracking. 100% offline.</span>
+      Made with ♥ to help you make the better buy. – <span class="badge">No tracking. 100% offline.</span>
     </footer>
   </div>
 
@@ -209,6 +223,10 @@
   const taxPct = document.getElementById('taxPct');
   const mixWarn = document.getElementById('mixWarn');
   const filePicker = document.getElementById('filePicker');
+  const savingsSpotlight = document.getElementById('savingsSpotlight');
+  const savingsAmount = document.getElementById('savingsAmount');
+  const savingsDesc = document.getElementById('savingsDesc');
+  const savingsPct = document.getElementById('savingsPct');
 
   const state = { rows: [], idCounter: 0 };
   const STORAGE_KEY = 'better-buy-v2';
@@ -325,6 +343,37 @@
     // Determine best price among comparable rows
     const comparable = rows.filter(r=> isFinite(r.unitPrice) && r.family === COMPARE_OPTIONS[compareBy.value].family);
     const best = comparable.length ? Math.min(...comparable.map(r=> r.unitPrice)) : Infinity;
+    const worst = comparable.length ? Math.max(...comparable.map(r=> r.unitPrice)) : -Infinity;
+
+    // Calculate savings spotlight
+    if (comparable.length >= 2 && isFinite(best) && isFinite(worst) && worst > best) {
+      const savingsPerUnit = worst - best;
+      const savingsPct = ((savingsPerUnit / worst) * 100);
+      
+      // Find the best option to get its total units
+      const bestRow = comparable.find(r=> Math.abs(r.unitPrice - best) < 1e-9);
+      const worstRow = comparable.find(r=> Math.abs(r.unitPrice - worst) < 1e-9);
+      
+      if (bestRow && worstRow) {
+        // Calculate total units in the best option
+        const bestFam = FAMILIES[bestRow.family];
+        const bestToBase = bestFam ? bestFam.map[bestRow.unit] : 1;
+        const bestTotalBaseUnits = bestRow.pack * bestRow.size * bestToBase;
+        
+        // Convert to display units
+        const displayUnitsInbest = convertUnitsToDisplay(bestTotalBaseUnits, bestRow.family, cmp);
+        const totalSavings = savingsPerUnit * displayUnitsInbest;
+        
+        savingsSpotlight.style.display = 'block';
+        savingsAmount.textContent = `${currency(totalSavings)} total savings`;
+        savingsDesc.textContent = `If you buy ${num(displayUnitsInbest, 2)} ${cmp.base} of the best option instead of the worst`;
+        document.getElementById('savingsPct').textContent = `${num(savingsPct, 1)}%`;
+      } else {
+        savingsSpotlight.style.display = 'none';
+      }
+    } else {
+      savingsSpotlight.style.display = 'none';
+    }
 
     // Render
     rows.forEach(row=>{
@@ -361,6 +410,28 @@
     }
     // Count has only each
     return perBase;
+  }
+
+  function convertUnitsToDisplay(baseUnits, fam, cmp){
+    // baseUnits: quantity in family base (oz | fl oz | each)
+    // Convert to display units requested by cmp
+    const base = FAMILIES[fam]?.base;
+    if (!base) return NaN;
+    
+    const want = cmp.base;
+    if (fam !== cmp.family) return baseUnits;
+    if (base === want) return baseUnits;
+    
+    // Weight conversions
+    if (fam==='weight'){
+      if (want==='lb') return baseUnits / 16;     // oz -> lb
+      if (want==='g')  return baseUnits * 28.349523125; // oz -> g
+    }
+    if (fam==='volume'){
+      if (want==='l')  return baseUnits * 0.0295735295625; // fl oz -> L
+      if (want==='ml') return baseUnits * 29.5735295625; // fl oz -> mL
+    }
+    return baseUnits;
   }
 
   function clamp(n, min, max){ return Math.min(max, Math.max(min, n)); }
