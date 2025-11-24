@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Better Buy Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f7f7f7;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.2rem;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input[type="file"] {
+      margin-top: 0.5rem;
+    }
+    button {
+      margin-top: 0.8rem;
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #111827;
+      color: white;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .small {
+      font-size: 0.8rem;
+      color: #555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    th, td {
+      padding: 0.5rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    tr.best-row {
+      background: #dcfce7;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #e5e7eb;
+    }
+    #ocrStatus {
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      color: #555;
+    }
+    #ocrText {
+      width: 100%;
+      height: 4rem;
+      font-size: 0.75rem;
+      margin-top: 0.4rem;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <h1>Better Buy Calculator</h1>
+  <p class="small">
+    Compare grocery items by <b>unit price</b>. You can type prices manually or
+    scan shelf tags with a photo (experimental – always double-check!).
+  </p>
+
+  <div class="card">
+    <h2 style="font-size:1.1rem;margin-top:0;">Add item</h2>
+
+    <label for="itemName">Item name</label>
+    <input id="itemName" type="text" placeholder="e.g., Maxwell House 40.4 oz" />
+
+    <label for="unitPrice">Unit price (numbers only)</label>
+    <input id="unitPrice" type="number" step="0.01" placeholder="e.g., 7.52" />
+
+    <label for="unitType">Unit</label>
+    <select id="unitType">
+      <option value="perPound">per pound (lb)</option>
+      <option value="perOunce">per ounce (oz)</option>
+    </select>
+
+    <p class="small">
+      For fair comparisons, make sure all items are by weight (lb or oz).
+      The calculator converts everything to <b>cost per ounce</b>.
+    </p>
+
+    <button id="addItemBtn">Add item</button>
+
+    <hr style="margin:1rem 0; border:none; border-top:1px solid #eee;">
+
+    <label for="photoInput">📷 Scan price from shelf tag (beta)</label>
+    <input id="photoInput" type="file" accept="image/*" capture="environment" />
+    <div id="ocrStatus" class="small"></div>
+    <textarea id="ocrText" class="small" placeholder="Recognized text will appear here..." readonly></textarea>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none;">
+    <h2 style="font-size:1.1rem;margin-top:0;">Results</h2>
+    <div id="bestSummary" class="small" style="margin-bottom:0.5rem;"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Unit price</th>
+          <th>Normalized<br>price (per oz)</th>
+        </tr>
+      </thead>
+      <tbody id="itemsTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Tesseract.js for OCR (needs internet) -->
+  <script src="https://unpkg.com/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+  <script>
+    const items = [];
+
+    function normalizePrice(price, unitType) {
+      const p = Number(price);
+      if (!isFinite(p) || p <= 0) return null;
+      // Convert everything to price per ounce
+      if (unitType === 'perPound') return p / 16;  // 1 lb = 16 oz
+      if (unitType === 'perOunce') return p;
+      return null;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('itemsTableBody');
+      tbody.innerHTML = '';
+
+      if (items.length === 0) {
+        document.getElementById('resultsCard').style.display = 'none';
+        return;
+      }
+
+      // Find best (lowest normalized price)
+      let bestIndex = 0;
+      let bestValue = items[0].normalized;
+      items.forEach((item, idx) => {
+        if (item.normalized < bestValue) {
+          bestValue = item.normalized;
+          bestIndex = idx;
+        }
+      });
+
+      items.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        if (idx === bestIndex) tr.classList.add('best-row');
+
+        const unitLabel = item.unitType === 'perPound' ? 'per lb' : 'per oz';
+
+        tr.innerHTML = `
+          <td>${item.name || 'Item ' + (idx + 1)}
+              ${idx === bestIndex ? '<div class="pill">Best buy</div>' : ''}
+          </td>
+          <td>$${item.price.toFixed(2)} <span class="small">${unitLabel}</span></td>
+          <td>$${item.normalized.toFixed(4)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const bestItem = items[bestIndex];
+      const bestPerLb = bestItem.normalized * 16;
+      document.getElementById('bestSummary').innerHTML =
+        `<b>Best buy:</b> ${bestItem.name || 'Item ' + (bestIndex + 1)} 
+         at about <b>$${bestItem.normalized.toFixed(4)} per oz</b> 
+         (≈ <b>$${bestPerLb.toFixed(2)} per lb</b>).`;
+
+      document.getElementById('resultsCard').style.display = 'block';
+    }
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+      const name = document.getElementById('itemName').value.trim();
+      const price = parseFloat(document.getElementById('unitPrice').value);
+      const unitType = document.getElementById('unitType').value;
+
+      const normalized = normalizePrice(price, unitType);
+      if (!normalized) {
+        alert('Please enter a valid unit price.');
+        return;
+      }
+
+      items.push({ name, price, unitType, normalized });
+      document.getElementById('itemName').value = '';
+      document.getElementById('unitPrice').value = '';
+      renderTable();
+    });
+
+    // --- OCR from photo ---
+    const photoInput = document.getElementById('photoInput');
+    const ocrStatus = document.getElementById('ocrStatus');
+    const ocrText = document.getElementById('ocrText');
+
+    photoInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      ocrStatus.textContent = 'Reading text from photo… this can take a few seconds.';
+      ocrText.value = '';
+
+      try {
+        const { data } = await Tesseract.recognize(file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              ocrStatus.textContent = 'Recognizing text… ' + Math.round(m.progress * 100) + '%';
+            }
+          }
+        });
+
+        const text = data.text || '';
+        ocrText.value = text.trim() || '(no text detected)';
+        ocrStatus.textContent = 'Tap in the price field to adjust if needed.';
+
+        // Try to guess a price like 7.52 or 29.99
+        const priceMatches = text.match(/\d+\.\d{2}/g) || [];
+        let priceGuess = null;
+        if (priceMatches.length > 0) {
+          const nums = priceMatches.map(x => parseFloat(x)).filter(n => n > 0.1 && n < 1000);
+          if (nums.length > 0) {
+            priceGuess = Math.min(...nums);
+          }
+        }
+
+        // Guess unit from words like "PER POUND" or "PER LB" or "PER OZ"
+        let unitGuess = 'perPound'; // default for grocery shelves
+        if (/PER\s*OZ|PER\s*OUNCE/i.test(text)) unitGuess = 'perOunce';
+        if (/PER\s*POUND|PER\s*LB/i.test(text)) unitGuess = 'perPound';
+
+        if (priceGuess !== null) {
+          document.getElementById('unitPrice').value = priceGuess.toFixed(2);
+        }
+        document.getElementById('unitType').value = unitGuess;
+
+      } catch (err) {
+        console.error(err);
+        ocrStatus.textContent = 'Sorry, something went wrong reading the photo.';
+        ocrText.value = '';
+      } finally {
+        // Allow rescan
+        event.target.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
