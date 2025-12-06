@@ -2,687 +2,323 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Thumbs Up Challenge</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Better Buy – UPC Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Barcode/QR scanner library -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
     body {
-      background: #050608;
-      color: #f5f5f7;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
       padding: 1rem;
+      background: #f4f5f7;
+      color: #222;
     }
-
     h1 {
-      font-size: 1.4rem;
-      margin-bottom: 0.4rem;
       text-align: center;
+      margin-bottom: 0.25rem;
     }
-
-    p.subtitle {
+    .subtitle {
+      text-align: center;
       font-size: 0.9rem;
-      color: #a1a1aa;
-      margin-bottom: 0.8rem;
-      text-align: center;
+      color: #555;
+      margin-bottom: 1rem;
     }
-
-    p.subtitle small {
-      display: block;
-      margin-top: 0.25rem;
-      font-size: 0.8rem;
-      color: #9ca3af;
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 10px;
+      padding: 1rem 1.25rem 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-
-    #app {
+    #reader {
       width: 100%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    #video-container {
-      position: relative;
-      width: 100%;
-      border-radius: 1rem;
+      max-width: 500px;
+      margin: 0.5rem auto 1rem;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
       background: #000;
-      aspect-ratio: 3 / 4;
-      transition: box-shadow 0.15s ease, transform 0.15s ease, border 0.15s ease;
-      border: 1px solid #18181b;
     }
-
-    #video-container.flash {
-      box-shadow: 0 0 40px rgba(34, 197, 94, 0.9);
-      border-color: #4ade80;
-      transform: scale(1.01);
-    }
-
-    video, canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1); /* selfie-style mirror */
-    }
-
-    #status {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border-radius: 999px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 1rem;
-      background: linear-gradient(135deg, #27272a, #18181b);
-      border: 1px solid #3f3f46;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-    }
-
-    #status.thumbs-up {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      border-color: #4ade80;
-      color: #022c22;
-      box-shadow: 0 0 20px rgba(34, 197, 94, 0.7);
-    }
-
-    #controls {
+    .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      width: 100%;
       justify-content: center;
-      margin-top: 0.25rem;
+      margin-bottom: 0.5rem;
     }
-
     button {
-      flex: 1;
-      padding: 0.7rem 1rem;
-      border-radius: 999px;
       border: none;
-      font-size: 0.95rem;
-      font-weight: 600;
-      background: #2563eb;
-      color: white;
+      border-radius: 999px;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
       cursor: pointer;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
-      -webkit-tap-highlight-color: transparent;
-      min-width: 0;
+      background: #2563eb;
+      color: #fff;
     }
-
-    button:active {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
-    }
-
     button.secondary {
-      background: #3f3f46;
-      box-shadow: 0 8px 20px rgba(24, 24, 27, 0.5);
+      background: #6b7280;
     }
-
-    button.ghost {
-      flex: 0;
-      padding-inline: 0.9rem;
-      font-size: 0.8rem;
-      background: transparent;
-      border: 1px solid #4b5563;
-      box-shadow: none;
-      color: #e5e7eb;
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
-
-    button.ghost:active {
-      box-shadow: none;
-    }
-
-    #metrics {
-      display: flex;
-      width: 100%;
-      gap: 0.5rem;
-      margin-top: 0.25rem;
-    }
-
-    .metric {
-      flex: 1;
-      padding: 0.6rem 0.7rem;
-      border-radius: 0.9rem;
-      background: #111827;
-      border: 1px solid #1f2937;
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      align-items: flex-start;
-      justify-content: center;
-    }
-
-    .metric span.value {
-      font-weight: 800;
-      font-size: 1.05rem;
-    }
-
-    .metric span.label {
-      font-size: 0.7rem;
-      color: #9ca3af;
-    }
-
-    #eventLog {
-      width: 100%;
-      margin-top: 0.35rem;
-      font-size: 0.75rem;
-      color: #9ca3af;
-      max-height: 80px;
-      overflow-y: auto;
-      padding-right: 0.25rem;
-      list-style: none;
-    }
-
-    #eventLog li {
-      padding: 0.2rem 0;
-      border-bottom: 1px dashed #1f2937;
-    }
-
-    #log {
-      font-size: 0.75rem;
-      color: #a1a1aa;
-      margin-top: 0.25rem;
+    #scan-status {
       text-align: center;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      color: #2563eb;
+      min-height: 1.2em;
     }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.15rem 0.6rem;
-      border-radius: 999px;
-      background: rgba(39, 39, 42, 0.9);
-      font-size: 0.7rem;
-      margin-top: 0.3rem;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
     }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
-      animation: blink 1s infinite;
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0.4rem;
+      text-align: left;
     }
-
-    @keyframes blink {
-      0%, 100% { opacity: 0.35; }
-      50% { opacity: 1; }
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+    tr.best {
+      background: #dcfce7;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.25rem 0.35rem;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+    }
+    input[readonly] {
+      background: #f9fafb;
+      color: #4b5563;
+    }
+    .footer-note {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+    }
+    #result {
+      margin-top: 0.75rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 700px) {
+      table {
+        font-size: 0.8rem;
+      }
+      th, td {
+        padding: 0.3rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <h1>Thumbs Up Challenge</h1>
-    <p class="subtitle">
-      Give as many <strong>thumbs ups</strong> as you can before time runs out.
-      <small>Challenge: get <strong>10</strong> thumbs ups in <strong>30 seconds</strong>.</small>
-      <br />
-      <span class="pill"><span class="dot"></span> On-device & in-browser</span>
-    </p>
-
-    <div id="video-container">
-      <video id="video" playsinline autoplay muted></video>
-      <canvas id="overlay"></canvas>
+  <div class="container">
+    <h1>Better Buy – UPC Scanner</h1>
+    <div class="subtitle">
+      Scan 2+ items, enter size & price, and I’ll highlight the best value.
     </div>
 
-    <div id="status">1. Start camera · 2. Start challenge</div>
-
-    <div id="controls">
-      <button id="startBtn">Start Camera</button>
-      <button id="challengeBtn" class="secondary">Start Challenge</button>
-      <button id="stopBtn" class="secondary">Stop</button>
-      <button id="resetScoreBtn" class="ghost">Reset score</button>
+    <div class="controls">
+      <button id="start-scan">Start Scanner</button>
+      <button id="stop-scan" class="secondary" disabled>Stop Scanner</button>
+      <button id="compare">Compare Items</button>
+      <button id="print" class="secondary">Print</button>
     </div>
 
-    <div id="metrics">
-      <div class="metric">
-        <span class="value" id="scoreValue">0</span>
-        <span class="label">Score (thumbs ups)</span>
-      </div>
-      <div class="metric">
-        <span class="value" id="highScoreValue">0</span>
-        <span class="label">High score</span>
-      </div>
-      <div class="metric">
-        <span class="value" id="timeLeftValue">--</span>
-        <span class="label">Time left</span>
-      </div>
+    <div id="scan-status"></div>
+    <div id="reader"></div>
+
+    <table id="items-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>UPC</th>
+          <th>Description</th>
+          <th>Size</th>
+          <th>Unit</th>
+          <th>Price ($)</th>
+          <th>Unit Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- rows added here -->
+      </tbody>
+    </table>
+
+    <div id="result"></div>
+
+    <div class="footer-note">
+      Tip: Use the <b>same unit</b> (e.g., fl&nbsp;oz, oz, lb, count) for all items you want to compare.  
+      UPC codes don’t contain size, so enter the actual package size printed on the label.
     </div>
-
-    <ul id="eventLog"></ul>
-
-    <div id="log">No predictions yet.</div>
   </div>
 
-  <!-- TensorFlow.js + Handpose (loaded from CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
-
   <script>
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("overlay");
-    const ctx = canvas.getContext("2d");
-    const statusEl = document.getElementById("status");
-    const logEl = document.getElementById("log");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const challengeBtn = document.getElementById("challengeBtn");
-    const resetScoreBtn = document.getElementById("resetScoreBtn");
-    const videoContainer = document.getElementById("video-container");
+    let html5QrCode = null;
+    let itemCount = 0;
 
-    const scoreValueEl = document.getElementById("scoreValue");
-    const highScoreValueEl = document.getElementById("highScoreValue");
-    const timeLeftValueEl = document.getElementById("timeLeftValue");
-    const eventLogEl = document.getElementById("eventLog");
+    const startBtn = document.getElementById("start-scan");
+    const stopBtn = document.getElementById("stop-scan");
+    const statusEl = document.getElementById("scan-status");
+    const tableBody = document.querySelector("#items-table tbody");
+    const resultEl = document.getElementById("result");
 
-    let stream = null;
-    let model = null;
-    let isRunning = false;
-    let lastThumbsUpState = false;
+    function addItem(upc) {
+      itemCount++;
+      const row = document.createElement("tr");
 
-    // Game state
-    let score = 0;
-    let highScore = 0;
-    let challengeActive = false;
-    let challengeEndTime = null;
-    let challengeTimerId = null;
+      row.innerHTML = `
+        <td>${itemCount}</td>
+        <td><input type="text" value="${upc}" readonly /></td>
+        <td><input type="text" placeholder="Optional name (e.g. Niagara 16.9 oz)" /></td>
+        <td><input type="number" min="0" step="0.01" class="size-input" placeholder="e.g. 16.9" /></td>
+        <td>
+          <select class="unit-select">
+            <option value="fl oz">fl oz</option>
+            <option value="oz">oz</option>
+            <option value="lb">lb</option>
+            <option value="mL">mL</option>
+            <option value="L">L</option>
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+            <option value="count">count</option>
+          </select>
+        </td>
+        <td><input type="number" min="0" step="0.01" class="price-input" placeholder="e.g. 0.25" /></td>
+        <td class="unit-price-cell">—</td>
+      `;
 
-    const CHALLENGE_DURATION_MS = 30000; // 30 seconds
-    const CHALLENGE_GOAL = 10;
+      tableBody.appendChild(row);
 
-    // Performance throttling
-    let lastPredictionTime = 0;
-    const PREDICTION_INTERVAL_MS = 80; // ~12.5 FPS max
+      const sizeInput = row.querySelector(".size-input");
+      const priceInput = row.querySelector(".price-input");
 
-    // Simple Web Audio beep
-    let audioCtx = null;
-    function initAudio() {
-      if (!audioCtx) {
-        try {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-          console.warn("Web Audio not available", e);
-        }
-      }
-    }
+      function recalc() {
+        const size = parseFloat(sizeInput.value);
+        const price = parseFloat(priceInput.value);
+        const cell = row.querySelector(".unit-price-cell");
 
-    function playBeep() {
-      if (!audioCtx) return;
-      const duration = 0.12;
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-
-      gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + duration);
-    }
-
-    function triggerHapticAndFlash() {
-      if (navigator.vibrate) {
-        try {
-          navigator.vibrate(40);
-        } catch (e) {}
-      }
-      videoContainer.classList.add("flash");
-      setTimeout(() => videoContainer.classList.remove("flash"), 160);
-    }
-
-    function setStatus(text, thumbsUp = false) {
-      statusEl.textContent = text;
-      if (thumbsUp) {
-        statusEl.classList.add("thumbs-up");
-      } else {
-        statusEl.classList.remove("thumbs-up");
-      }
-    }
-
-    function appendEventLog(message) {
-      const li = document.createElement("li");
-      li.textContent = message;
-      eventLogEl.insertBefore(li, eventLogEl.firstChild);
-      while (eventLogEl.children.length > 5) {
-        eventLogEl.removeChild(eventLogEl.lastChild);
-      }
-    }
-
-    function updateScore() {
-      // Only count during active challenge
-      if (!challengeActive) return;
-
-      score++;
-      scoreValueEl.textContent = score.toString();
-
-      if (score > highScore) {
-        highScore = score;
-        highScoreValueEl.textContent = highScore.toString();
-      }
-
-      const now = new Date();
-      const ts = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      appendEventLog(`👍 Thumbs up at ${ts} (score: ${score})`);
-    }
-
-    function resetScore() {
-      score = 0;
-      scoreValueEl.textContent = "0";
-      while (eventLogEl.firstChild) {
-        eventLogEl.removeChild(eventLogEl.firstChild);
-      }
-      logEl.textContent = "Score reset. Start a challenge to begin.";
-    }
-
-    function updateTimeLeft() {
-      if (!challengeActive || challengeEndTime === null) {
-        timeLeftValueEl.textContent = "--";
-        return;
-      }
-      const now = performance.now();
-      let remaining = challengeEndTime - now;
-
-      if (remaining <= 0) {
-        remaining = 0;
-        timeLeftValueEl.textContent = "0.0s";
-        endChallenge();
-      } else {
-        const seconds = (remaining / 1000).toFixed(1);
-        timeLeftValueEl.textContent = `${seconds}s`;
-      }
-    }
-
-    function startTimer() {
-      if (challengeTimerId) clearInterval(challengeTimerId);
-      challengeTimerId = setInterval(updateTimeLeft, 100);
-    }
-
-    function stopTimer() {
-      if (challengeTimerId) {
-        clearInterval(challengeTimerId);
-        challengeTimerId = null;
-      }
-    }
-
-    function endChallenge() {
-      if (!challengeActive) return;
-      challengeActive = false;
-      stopTimer();
-
-      const success = score >= CHALLENGE_GOAL;
-      const msg = success
-        ? `🎉 Challenge complete! Score: ${score} (goal: ${CHALLENGE_GOAL})`
-        : `⏰ Time's up! Score: ${score} (goal: ${CHALLENGE_GOAL})`;
-
-      setStatus(msg, success);
-      logEl.textContent = msg;
-      appendEventLog(msg);
-    }
-
-    async function initCamera() {
-      if (stream) return;
-
-      try {
-        const constraints = {
-          audio: false,
-          video: {
-            facingMode: "environment",
-            width: { ideal: 480 },
-            height: { ideal: 640 }
-          }
-        };
-
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-
-        return new Promise((resolve) => {
-          video.onloadedmetadata = () => {
-            video.play();
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            resolve();
-          };
-        });
-      } catch (err) {
-        console.error(err);
-        setStatus("Camera access denied or unavailable.", false);
-        logEl.textContent = err.message || String(err);
-      }
-    }
-
-    async function initModel() {
-      if (model) return;
-      setStatus("Loading handpose model…");
-      await tf.setBackend("webgl");
-      await tf.ready();
-      model = await handpose.load();
-      setStatus("Camera ready. Tap Start Challenge.");
-    }
-
-    function drawLandmarks(prediction) {
-      if (!prediction || !prediction.landmarks) return;
-      const landmarks = prediction.landmarks;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(250,250,250,0.8)";
-      ctx.fillStyle = "rgba(59,130,246,0.9)";
-
-      for (const point of landmarks) {
-        const [x, y] = point;
-        ctx.beginPath();
-        ctx.arc(canvas.width - x, y, 4, 0, 2 * Math.PI); // mirror
-        ctx.fill();
-      }
-    }
-
-    // Simple thumbs-up heuristic
-    function isThumbsUp(prediction) {
-      const ann = prediction.annotations;
-      if (!ann || !ann.thumb || !ann.indexFinger || !ann.middleFinger || !ann.ringFinger || !ann.pinky) {
-        return false;
-      }
-
-      const thumb = ann.thumb;
-      const indexFinger = ann.indexFinger;
-      const middleFinger = ann.middleFinger;
-      const ringFinger = ann.ringFinger;
-      const pinky = ann.pinky;
-
-      const thumbTip = thumb[3];
-      const thumbBase = thumb[0];
-      const wrist = ann.palmBase ? ann.palmBase[0] : thumbBase;
-
-      const thumbUp =
-        thumbTip[1] < thumbBase[1] - 5 &&
-        thumbTip[1] < wrist[1] - 10;
-
-      const tips = [
-        indexFinger[3],
-        middleFinger[3],
-        ringFinger[3],
-        pinky[3],
-      ];
-
-      let curledCount = 0;
-      for (const t of tips) {
-        if (t[1] > wrist[1] + 10) curledCount++;
-      }
-
-      return thumbUp && curledCount >= 3;
-    }
-
-    async function detectionLoop() {
-      if (!model || !video || !isRunning) return;
-
-      const now = performance.now();
-      const elapsed = now - lastPredictionTime;
-
-      if (elapsed < PREDICTION_INTERVAL_MS) {
-        if (isRunning) requestAnimationFrame(detectionLoop);
-        return;
-      }
-      lastPredictionTime = now;
-
-      try {
-        const predictions = await model.estimateHands(video, true);
-        if (predictions.length === 0) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          setStatus(challengeActive
-            ? "Challenge running: show your hand!"
-            : "Show your hand to the camera.");
-          if (!challengeActive) {
-            logEl.textContent = "No hand detected.";
-          }
-          lastThumbsUpState = false;
+        if (size > 0 && price > 0) {
+          const unitPrice = price / size;
+          row.dataset.unitPrice = unitPrice;
+          cell.textContent = "$" + unitPrice.toFixed(4);
         } else {
-          const prediction = predictions[0];
-          drawLandmarks(prediction);
-
-          const thumbsUp = isThumbsUp(prediction);
-          if (thumbsUp) {
-            setStatus(challengeActive
-              ? "👍 Thumbs Up! Keep going!"
-              : "👍 Thumbs up detected (start challenge to score).",
-              true);
-
-            if (!lastThumbsUpState && challengeActive) {
-              // New thumbs up DURING challenge
-              updateScore();
-              triggerHapticAndFlash();
-              playBeep();
-            }
-          } else {
-            setStatus(challengeActive
-              ? "Challenge running: waiting for thumbs up…"
-              : "Hand detected, waiting for thumbs up…");
-          }
-          lastThumbsUpState = thumbsUp;
+          row.dataset.unitPrice = "";
+          cell.textContent = "—";
         }
-      } catch (err) {
-        console.error(err);
-        logEl.textContent = "Error in detection loop: " + (err.message || String(err));
       }
 
-      if (isRunning) {
-        requestAnimationFrame(detectionLoop);
+      sizeInput.addEventListener("input", recalc);
+      priceInput.addEventListener("input", recalc);
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      // Avoid rapid duplicate scans of the same code
+      const lastUPC = tableBody.lastElementChild?.querySelector("td:nth-child(2) input")?.value;
+      if (decodedText === lastUPC) {
+        return;
+      }
+      addItem(decodedText);
+      statusEl.textContent = "Scanned: " + decodedText;
+    }
+
+    function onScanFailure(error) {
+      // You can log errors if you want; keep UI quiet to avoid spam.
+    }
+
+    async function startScanner() {
+      try {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+        }
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: 250,
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.CODE_128
+            ]
+          },
+          onScanSuccess,
+          onScanFailure
+        );
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        statusEl.textContent = "Scanner running… point the camera at a barcode.";
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Error starting scanner: " + err;
       }
     }
 
-    async function startCameraAndModel() {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setStatus("Camera API not supported in this browser.");
+    async function stopScanner() {
+      if (html5QrCode) {
+        try {
+          await html5QrCode.stop();
+          statusEl.textContent = "Scanner stopped.";
+        } catch (err) {
+          console.error(err);
+          statusEl.textContent = "Error stopping scanner: " + err;
+        }
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    function compareItems() {
+      const rows = Array.from(tableBody.querySelectorAll("tr"));
+      rows.forEach(r => r.classList.remove("best"));
+      resultEl.textContent = "";
+
+      let bestRow = null;
+      let bestPrice = Infinity;
+
+      rows.forEach(row => {
+        const value = parseFloat(row.dataset.unitPrice);
+        if (!isNaN(value) && value > 0 && value < bestPrice) {
+          bestPrice = value;
+          bestRow = row;
+        }
+      });
+
+      if (!bestRow) {
+        resultEl.textContent = "Enter size and price for at least two items to compare.";
         return;
       }
 
-      setStatus("Initializing camera…");
+      bestRow.classList.add("best");
 
-      initAudio(); // user gesture triggered
+      const upc = bestRow.querySelector("td:nth-child(2) input").value;
+      const desc = bestRow.querySelector("td:nth-child(3) input").value || "(no description)";
+      const unit = bestRow.querySelector(".unit-select").value;
 
-      await initCamera();
-      await initModel();
-
-      if (!isRunning) {
-        isRunning = true;
-        lastThumbsUpState = false;
-        detectionLoop();
-      }
+      resultEl.textContent =
+        `Best value: ${desc} (UPC ${upc}) at $${bestPrice.toFixed(4)} per ${unit}.`;
     }
 
-    async function startChallenge() {
-      if (!stream || !model) {
-        // If camera/model not ready, start them first
-        await startCameraAndModel();
-      }
-      if (challengeActive) return;
-
-      // Reset current round
-      score = 0;
-      scoreValueEl.textContent = "0";
-      while (eventLogEl.firstChild) {
-        eventLogEl.removeChild(eventLogEl.firstChild);
-      }
-
-      challengeActive = true;
-      const now = performance.now();
-      challengeEndTime = now + CHALLENGE_DURATION_MS;
-      updateTimeLeft();
-      startTimer();
-
-      setStatus("Challenge started! Give thumbs ups!", false);
-      logEl.textContent = `Challenge started: get ${CHALLENGE_GOAL} thumbs ups in 30 seconds.`;
-    }
-
-    function stopAll() {
-      isRunning = false;
-      lastThumbsUpState = false;
-
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
-      video.srcObject = null;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Stop any active challenge
-      challengeActive = false;
-      stopTimer();
-      timeLeftValueEl.textContent = "--";
-
-      setStatus("Stopped. Start camera to play again.");
-      logEl.textContent = "Detection paused.";
-    }
-
-    // Button handlers
-    startBtn.addEventListener("click", () => {
-      startCameraAndModel();
-    });
-
-    challengeBtn.addEventListener("click", () => {
-      startChallenge();
-    });
-
-    stopBtn.addEventListener("click", () => {
-      stopAll();
-    });
-
-    resetScoreBtn.addEventListener("click", () => {
-      resetScore();
-    });
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden && isRunning) {
-        stopAll();
-      }
-    });
+    document.getElementById("start-scan").addEventListener("click", startScanner);
+    document.getElementById("stop-scan").addEventListener("click", stopScanner);
+    document.getElementById("compare").addEventListener("click", compareItems);
+    document.getElementById("print").addEventListener("click", () => window.print());
   </script>
 </body>
 </html>
