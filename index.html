@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Thumbs Up Detector</title>
+  <title>Thumbs Up Challenge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
   <style>
@@ -35,6 +35,13 @@
       color: #a1a1aa;
       margin-bottom: 0.8rem;
       text-align: center;
+    }
+
+    p.subtitle small {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.8rem;
+      color: #9ca3af;
     }
 
     #app {
@@ -97,6 +104,7 @@
 
     #controls {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       width: 100%;
       justify-content: center;
@@ -116,6 +124,7 @@
       transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
       box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
       -webkit-tap-highlight-color: transparent;
+      min-width: 0;
     }
 
     button:active {
@@ -128,6 +137,20 @@
       box-shadow: 0 8px 20px rgba(24, 24, 27, 0.5);
     }
 
+    button.ghost {
+      flex: 0;
+      padding-inline: 0.9rem;
+      font-size: 0.8rem;
+      background: transparent;
+      border: 1px solid #4b5563;
+      box-shadow: none;
+      color: #e5e7eb;
+    }
+
+    button.ghost:active {
+      box-shadow: none;
+    }
+
     #metrics {
       display: flex;
       width: 100%;
@@ -137,7 +160,7 @@
 
     .metric {
       flex: 1;
-      padding: 0.55rem 0.7rem;
+      padding: 0.6rem 0.7rem;
       border-radius: 0.9rem;
       background: #111827;
       border: 1px solid #1f2937;
@@ -149,8 +172,8 @@
     }
 
     .metric span.value {
-      font-weight: 700;
-      font-size: 0.95rem;
+      font-weight: 800;
+      font-size: 1.05rem;
     }
 
     .metric span.label {
@@ -208,9 +231,10 @@
 </head>
 <body>
   <div id="app">
-    <h1>Thumbs Up Detector</h1>
+    <h1>Thumbs Up Challenge</h1>
     <p class="subtitle">
-      Tap “Start Camera”, show your hand, then give a <strong>thumbs up</strong>.
+      Give as many <strong>thumbs ups</strong> as you can before time runs out.
+      <small>Challenge: get <strong>10</strong> thumbs ups in <strong>30 seconds</strong>.</small>
       <br />
       <span class="pill"><span class="dot"></span> On-device & in-browser</span>
     </p>
@@ -220,21 +244,27 @@
       <canvas id="overlay"></canvas>
     </div>
 
-    <div id="status">Waiting for camera…</div>
+    <div id="status">1. Start camera · 2. Start challenge</div>
 
     <div id="controls">
       <button id="startBtn">Start Camera</button>
+      <button id="challengeBtn" class="secondary">Start Challenge</button>
       <button id="stopBtn" class="secondary">Stop</button>
+      <button id="resetScoreBtn" class="ghost">Reset score</button>
     </div>
 
     <div id="metrics">
       <div class="metric">
-        <span class="value" id="thumbsCount">0</span>
-        <span class="label">Thumbs ups detected</span>
+        <span class="value" id="scoreValue">0</span>
+        <span class="label">Score (thumbs ups)</span>
       </div>
       <div class="metric">
-        <span class="value" id="lastTime">--</span>
-        <span class="label">Last detection</span>
+        <span class="value" id="highScoreValue">0</span>
+        <span class="label">High score</span>
+      </div>
+      <div class="metric">
+        <span class="value" id="timeLeftValue">--</span>
+        <span class="label">Time left</span>
       </div>
     </div>
 
@@ -257,17 +287,29 @@
     const logEl = document.getElementById("log");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
+    const challengeBtn = document.getElementById("challengeBtn");
+    const resetScoreBtn = document.getElementById("resetScoreBtn");
     const videoContainer = document.getElementById("video-container");
 
-    const thumbsCountEl = document.getElementById("thumbsCount");
-    const lastTimeEl = document.getElementById("lastTime");
+    const scoreValueEl = document.getElementById("scoreValue");
+    const highScoreValueEl = document.getElementById("highScoreValue");
+    const timeLeftValueEl = document.getElementById("timeLeftValue");
     const eventLogEl = document.getElementById("eventLog");
 
     let stream = null;
     let model = null;
     let isRunning = false;
     let lastThumbsUpState = false;
-    let thumbsUpCount = 0;
+
+    // Game state
+    let score = 0;
+    let highScore = 0;
+    let challengeActive = false;
+    let challengeEndTime = null;
+    let challengeTimerId = null;
+
+    const CHALLENGE_DURATION_MS = 30000; // 30 seconds
+    const CHALLENGE_GOAL = 10;
 
     // Performance throttling
     let lastPredictionTime = 0;
@@ -306,35 +348,13 @@
     }
 
     function triggerHapticAndFlash() {
-      // Vibrate where supported
       if (navigator.vibrate) {
         try {
           navigator.vibrate(40);
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       }
-
-      // Flash around the video
       videoContainer.classList.add("flash");
       setTimeout(() => videoContainer.classList.remove("flash"), 160);
-    }
-
-    function updateMetricsOnThumbsUp() {
-      thumbsUpCount++;
-      thumbsCountEl.textContent = thumbsUpCount.toString();
-
-      const now = new Date();
-      const ts = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      lastTimeEl.textContent = ts;
-
-      // Add to rolling log (last 5 entries)
-      const li = document.createElement("li");
-      li.textContent = `👍 Thumbs up at ${ts}`;
-      eventLogEl.insertBefore(li, eventLogEl.firstChild);
-      while (eventLogEl.children.length > 5) {
-        eventLogEl.removeChild(eventLogEl.lastChild);
-      }
     }
 
     function setStatus(text, thumbsUp = false) {
@@ -346,6 +366,86 @@
       }
     }
 
+    function appendEventLog(message) {
+      const li = document.createElement("li");
+      li.textContent = message;
+      eventLogEl.insertBefore(li, eventLogEl.firstChild);
+      while (eventLogEl.children.length > 5) {
+        eventLogEl.removeChild(eventLogEl.lastChild);
+      }
+    }
+
+    function updateScore() {
+      // Only count during active challenge
+      if (!challengeActive) return;
+
+      score++;
+      scoreValueEl.textContent = score.toString();
+
+      if (score > highScore) {
+        highScore = score;
+        highScoreValueEl.textContent = highScore.toString();
+      }
+
+      const now = new Date();
+      const ts = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      appendEventLog(`👍 Thumbs up at ${ts} (score: ${score})`);
+    }
+
+    function resetScore() {
+      score = 0;
+      scoreValueEl.textContent = "0";
+      while (eventLogEl.firstChild) {
+        eventLogEl.removeChild(eventLogEl.firstChild);
+      }
+      logEl.textContent = "Score reset. Start a challenge to begin.";
+    }
+
+    function updateTimeLeft() {
+      if (!challengeActive || challengeEndTime === null) {
+        timeLeftValueEl.textContent = "--";
+        return;
+      }
+      const now = performance.now();
+      let remaining = challengeEndTime - now;
+
+      if (remaining <= 0) {
+        remaining = 0;
+        timeLeftValueEl.textContent = "0.0s";
+        endChallenge();
+      } else {
+        const seconds = (remaining / 1000).toFixed(1);
+        timeLeftValueEl.textContent = `${seconds}s`;
+      }
+    }
+
+    function startTimer() {
+      if (challengeTimerId) clearInterval(challengeTimerId);
+      challengeTimerId = setInterval(updateTimeLeft, 100);
+    }
+
+    function stopTimer() {
+      if (challengeTimerId) {
+        clearInterval(challengeTimerId);
+        challengeTimerId = null;
+      }
+    }
+
+    function endChallenge() {
+      if (!challengeActive) return;
+      challengeActive = false;
+      stopTimer();
+
+      const success = score >= CHALLENGE_GOAL;
+      const msg = success
+        ? `🎉 Challenge complete! Score: ${score} (goal: ${CHALLENGE_GOAL})`
+        : `⏰ Time's up! Score: ${score} (goal: ${CHALLENGE_GOAL})`;
+
+      setStatus(msg, success);
+      logEl.textContent = msg;
+      appendEventLog(msg);
+    }
+
     async function initCamera() {
       if (stream) return;
 
@@ -353,7 +453,7 @@
         const constraints = {
           audio: false,
           video: {
-            facingMode: "environment", // try rear camera first
+            facingMode: "environment",
             width: { ideal: 480 },
             height: { ideal: 640 }
           }
@@ -383,7 +483,7 @@
       await tf.setBackend("webgl");
       await tf.ready();
       model = await handpose.load();
-      setStatus("Model loaded. Show your hand.");
+      setStatus("Camera ready. Tap Start Challenge.");
     }
 
     function drawLandmarks(prediction) {
@@ -399,12 +499,12 @@
       for (const point of landmarks) {
         const [x, y] = point;
         ctx.beginPath();
-        ctx.arc(canvas.width - x, y, 4, 0, 2 * Math.PI); // mirror for selfie
+        ctx.arc(canvas.width - x, y, 4, 0, 2 * Math.PI); // mirror
         ctx.fill();
       }
     }
 
-    // Simple thumbs-up heuristic using handpose annotations
+    // Simple thumbs-up heuristic
     function isThumbsUp(prediction) {
       const ann = prediction.annotations;
       if (!ann || !ann.thumb || !ann.indexFinger || !ann.middleFinger || !ann.ringFinger || !ann.pinky) {
@@ -421,8 +521,6 @@
       const thumbBase = thumb[0];
       const wrist = ann.palmBase ? ann.palmBase[0] : thumbBase;
 
-      // Coordinates: y increases downward.
-      // Thumb up: thumb tip above wrist & above thumb base.
       const thumbUp =
         thumbTip[1] < thumbBase[1] - 5 &&
         thumbTip[1] < wrist[1] - 10;
@@ -434,13 +532,11 @@
         pinky[3],
       ];
 
-      // Fingers curled: finger tips below wrist (larger y).
       let curledCount = 0;
       for (const t of tips) {
         if (t[1] > wrist[1] + 10) curledCount++;
       }
 
-      // Require most non-thumb fingers to be curled.
       return thumbUp && curledCount >= 3;
     }
 
@@ -450,11 +546,8 @@
       const now = performance.now();
       const elapsed = now - lastPredictionTime;
 
-      // Throttle predictions for performance
       if (elapsed < PREDICTION_INTERVAL_MS) {
-        if (isRunning) {
-          requestAnimationFrame(detectionLoop);
-        }
+        if (isRunning) requestAnimationFrame(detectionLoop);
         return;
       }
       lastPredictionTime = now;
@@ -463,8 +556,12 @@
         const predictions = await model.estimateHands(video, true);
         if (predictions.length === 0) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          setStatus("Show your hand to the camera.");
-          logEl.textContent = "No hand detected.";
+          setStatus(challengeActive
+            ? "Challenge running: show your hand!"
+            : "Show your hand to the camera.");
+          if (!challengeActive) {
+            logEl.textContent = "No hand detected.";
+          }
           lastThumbsUpState = false;
         } else {
           const prediction = predictions[0];
@@ -472,18 +569,21 @@
 
           const thumbsUp = isThumbsUp(prediction);
           if (thumbsUp) {
-            setStatus("👍 Thumbs Up Detected!", true);
-            logEl.textContent = "Gesture classified as THUMBS UP.";
+            setStatus(challengeActive
+              ? "👍 Thumbs Up! Keep going!"
+              : "👍 Thumbs up detected (start challenge to score).",
+              true);
 
-            if (!lastThumbsUpState) {
-              // Rising edge: just changed into thumbs-up state
-              updateMetricsOnThumbsUp();
+            if (!lastThumbsUpState && challengeActive) {
+              // New thumbs up DURING challenge
+              updateScore();
               triggerHapticAndFlash();
               playBeep();
             }
           } else {
-            setStatus("Hand detected, waiting for thumbs up…");
-            logEl.textContent = "Hand detected, but not a thumbs up.";
+            setStatus(challengeActive
+              ? "Challenge running: waiting for thumbs up…"
+              : "Hand detected, waiting for thumbs up…");
           }
           lastThumbsUpState = thumbsUp;
         }
@@ -497,45 +597,90 @@
       }
     }
 
-    async function start() {
-      if (isRunning) return;
+    async function startCameraAndModel() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setStatus("Camera API not supported in this browser.");
         return;
       }
 
-      setStatus("Initializing…");
+      setStatus("Initializing camera…");
 
-      initAudio(); // needs user gesture (button tap) on iOS
+      initAudio(); // user gesture triggered
 
       await initCamera();
       await initModel();
 
-      isRunning = true;
-      lastThumbsUpState = false;
-      detectionLoop();
+      if (!isRunning) {
+        isRunning = true;
+        lastThumbsUpState = false;
+        detectionLoop();
+      }
     }
 
-    function stop() {
+    async function startChallenge() {
+      if (!stream || !model) {
+        // If camera/model not ready, start them first
+        await startCameraAndModel();
+      }
+      if (challengeActive) return;
+
+      // Reset current round
+      score = 0;
+      scoreValueEl.textContent = "0";
+      while (eventLogEl.firstChild) {
+        eventLogEl.removeChild(eventLogEl.firstChild);
+      }
+
+      challengeActive = true;
+      const now = performance.now();
+      challengeEndTime = now + CHALLENGE_DURATION_MS;
+      updateTimeLeft();
+      startTimer();
+
+      setStatus("Challenge started! Give thumbs ups!", false);
+      logEl.textContent = `Challenge started: get ${CHALLENGE_GOAL} thumbs ups in 30 seconds.`;
+    }
+
+    function stopAll() {
       isRunning = false;
+      lastThumbsUpState = false;
+
       if (stream) {
         stream.getTracks().forEach(t => t.stop());
         stream = null;
       }
       video.srcObject = null;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      setStatus("Stopped. Tap Start Camera to run again.");
+
+      // Stop any active challenge
+      challengeActive = false;
+      stopTimer();
+      timeLeftValueEl.textContent = "--";
+
+      setStatus("Stopped. Start camera to play again.");
       logEl.textContent = "Detection paused.";
-      lastThumbsUpState = false;
     }
 
-    startBtn.addEventListener("click", () => start());
-    stopBtn.addEventListener("click", () => stop());
+    // Button handlers
+    startBtn.addEventListener("click", () => {
+      startCameraAndModel();
+    });
 
-    // Optional: pause detection when page is hidden
+    challengeBtn.addEventListener("click", () => {
+      startChallenge();
+    });
+
+    stopBtn.addEventListener("click", () => {
+      stopAll();
+    });
+
+    resetScoreBtn.addEventListener("click", () => {
+      resetScore();
+    });
+
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && isRunning) {
-        stop();
+        stopAll();
       }
     });
   </script>
