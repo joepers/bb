@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Thumbs Up Detector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: #050608;
+      color: #f5f5f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+
+    p.subtitle {
+      font-size: 0.9rem;
+      color: #a1a1aa;
+      margin-bottom: 0.8rem;
+      text-align: center;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    #video-container {
+      position: relative;
+      width: 100%;
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      background: #000;
+      aspect-ratio: 3 / 4;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, border 0.15s ease;
+      border: 1px solid #18181b;
+    }
+
+    #video-container.flash {
+      box-shadow: 0 0 40px rgba(34, 197, 94, 0.9);
+      border-color: #4ade80;
+      transform: scale(1.01);
+    }
+
+    video, canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* selfie-style mirror */
+    }
+
+    #status {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 999px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      background: linear-gradient(135deg, #27272a, #18181b);
+      border: 1px solid #3f3f46;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    #status.thumbs-up {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-color: #4ade80;
+      color: #022c22;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.7);
+    }
+
+    #controls {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      justify-content: center;
+      margin-top: 0.25rem;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+    }
+
+    button.secondary {
+      background: #3f3f46;
+      box-shadow: 0 8px 20px rgba(24, 24, 27, 0.5);
+    }
+
+    #metrics {
+      display: flex;
+      width: 100%;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .metric {
+      flex: 1;
+      padding: 0.55rem 0.7rem;
+      border-radius: 0.9rem;
+      background: #111827;
+      border: 1px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .metric span.value {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .metric span.label {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    #eventLog {
+      width: 100%;
+      margin-top: 0.35rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      max-height: 80px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+      list-style: none;
+    }
+
+    #eventLog li {
+      padding: 0.2rem 0;
+      border-bottom: 1px dashed #1f2937;
+    }
+
+    #log {
+      font-size: 0.75rem;
+      color: #a1a1aa;
+      margin-top: 0.25rem;
+      text-align: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(39, 39, 42, 0.9);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>Thumbs Up Detector</h1>
+    <p class="subtitle">
+      Tap “Start Camera”, show your hand, then give a <strong>thumbs up</strong>.
+      <br />
+      <span class="pill"><span class="dot"></span> On-device & in-browser</span>
+    </p>
+
+    <div id="video-container">
+      <video id="video" playsinline autoplay muted></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div id="status">Waiting for camera…</div>
+
+    <div id="controls">
+      <button id="startBtn">Start Camera</button>
+      <button id="stopBtn" class="secondary">Stop</button>
+    </div>
+
+    <div id="metrics">
+      <div class="metric">
+        <span class="value" id="thumbsCount">0</span>
+        <span class="label">Thumbs ups detected</span>
+      </div>
+      <div class="metric">
+        <span class="value" id="lastTime">--</span>
+        <span class="label">Last detection</span>
+      </div>
+    </div>
+
+    <ul id="eventLog"></ul>
+
+    <div id="log">No predictions yet.</div>
+  </div>
+
+  <!-- TensorFlow.js + Handpose (loaded from CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("overlay");
+    const ctx = canvas.getContext("2d");
+    const statusEl = document.getElementById("status");
+    const logEl = document.getElementById("log");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const videoContainer = document.getElementById("video-container");
+
+    const thumbsCountEl = document.getElementById("thumbsCount");
+    const lastTimeEl = document.getElementById("lastTime");
+    const eventLogEl = document.getElementById("eventLog");
+
+    let stream = null;
+    let model = null;
+    let isRunning = false;
+    let lastThumbsUpState = false;
+    let thumbsUpCount = 0;
+
+    // Performance throttling
+    let lastPredictionTime = 0;
+    const PREDICTION_INTERVAL_MS = 80; // ~12.5 FPS max
+
+    // Simple Web Audio beep
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+          console.warn("Web Audio not available", e);
+        }
+      }
+    }
+
+    function playBeep() {
+      if (!audioCtx) return;
+      const duration = 0.12;
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+
+      gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    function triggerHapticAndFlash() {
+      // Vibrate where supported
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate(40);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // Flash around the video
+      videoContainer.classList.add("flash");
+      setTimeout(() => videoContainer.classList.remove("flash"), 160);
+    }
+
+    function updateMetricsOnThumbsUp() {
+      thumbsUpCount++;
+      thumbsCountEl.textContent = thumbsUpCount.toString();
+
+      const now = new Date();
+      const ts = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      lastTimeEl.textContent = ts;
+
+      // Add to rolling log (last 5 entries)
+      const li = document.createElement("li");
+      li.textContent = `👍 Thumbs up at ${ts}`;
+      eventLogEl.insertBefore(li, eventLogEl.firstChild);
+      while (eventLogEl.children.length > 5) {
+        eventLogEl.removeChild(eventLogEl.lastChild);
+      }
+    }
+
+    function setStatus(text, thumbsUp = false) {
+      statusEl.textContent = text;
+      if (thumbsUp) {
+        statusEl.classList.add("thumbs-up");
+      } else {
+        statusEl.classList.remove("thumbs-up");
+      }
+    }
+
+    async function initCamera() {
+      if (stream) return;
+
+      try {
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: "environment", // try rear camera first
+            width: { ideal: 480 },
+            height: { ideal: 640 }
+          }
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+
+        return new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play();
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            resolve();
+          };
+        });
+      } catch (err) {
+        console.error(err);
+        setStatus("Camera access denied or unavailable.", false);
+        logEl.textContent = err.message || String(err);
+      }
+    }
+
+    async function initModel() {
+      if (model) return;
+      setStatus("Loading handpose model…");
+      await tf.setBackend("webgl");
+      await tf.ready();
+      model = await handpose.load();
+      setStatus("Model loaded. Show your hand.");
+    }
+
+    function drawLandmarks(prediction) {
+      if (!prediction || !prediction.landmarks) return;
+      const landmarks = prediction.landmarks;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(250,250,250,0.8)";
+      ctx.fillStyle = "rgba(59,130,246,0.9)";
+
+      for (const point of landmarks) {
+        const [x, y] = point;
+        ctx.beginPath();
+        ctx.arc(canvas.width - x, y, 4, 0, 2 * Math.PI); // mirror for selfie
+        ctx.fill();
+      }
+    }
+
+    // Simple thumbs-up heuristic using handpose annotations
+    function isThumbsUp(prediction) {
+      const ann = prediction.annotations;
+      if (!ann || !ann.thumb || !ann.indexFinger || !ann.middleFinger || !ann.ringFinger || !ann.pinky) {
+        return false;
+      }
+
+      const thumb = ann.thumb;
+      const indexFinger = ann.indexFinger;
+      const middleFinger = ann.middleFinger;
+      const ringFinger = ann.ringFinger;
+      const pinky = ann.pinky;
+
+      const thumbTip = thumb[3];
+      const thumbBase = thumb[0];
+      const wrist = ann.palmBase ? ann.palmBase[0] : thumbBase;
+
+      // Coordinates: y increases downward.
+      // Thumb up: thumb tip above wrist & above thumb base.
+      const thumbUp =
+        thumbTip[1] < thumbBase[1] - 5 &&
+        thumbTip[1] < wrist[1] - 10;
+
+      const tips = [
+        indexFinger[3],
+        middleFinger[3],
+        ringFinger[3],
+        pinky[3],
+      ];
+
+      // Fingers curled: finger tips below wrist (larger y).
+      let curledCount = 0;
+      for (const t of tips) {
+        if (t[1] > wrist[1] + 10) curledCount++;
+      }
+
+      // Require most non-thumb fingers to be curled.
+      return thumbUp && curledCount >= 3;
+    }
+
+    async function detectionLoop() {
+      if (!model || !video || !isRunning) return;
+
+      const now = performance.now();
+      const elapsed = now - lastPredictionTime;
+
+      // Throttle predictions for performance
+      if (elapsed < PREDICTION_INTERVAL_MS) {
+        if (isRunning) {
+          requestAnimationFrame(detectionLoop);
+        }
+        return;
+      }
+      lastPredictionTime = now;
+
+      try {
+        const predictions = await model.estimateHands(video, true);
+        if (predictions.length === 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          setStatus("Show your hand to the camera.");
+          logEl.textContent = "No hand detected.";
+          lastThumbsUpState = false;
+        } else {
+          const prediction = predictions[0];
+          drawLandmarks(prediction);
+
+          const thumbsUp = isThumbsUp(prediction);
+          if (thumbsUp) {
+            setStatus("👍 Thumbs Up Detected!", true);
+            logEl.textContent = "Gesture classified as THUMBS UP.";
+
+            if (!lastThumbsUpState) {
+              // Rising edge: just changed into thumbs-up state
+              updateMetricsOnThumbsUp();
+              triggerHapticAndFlash();
+              playBeep();
+            }
+          } else {
+            setStatus("Hand detected, waiting for thumbs up…");
+            logEl.textContent = "Hand detected, but not a thumbs up.";
+          }
+          lastThumbsUpState = thumbsUp;
+        }
+      } catch (err) {
+        console.error(err);
+        logEl.textContent = "Error in detection loop: " + (err.message || String(err));
+      }
+
+      if (isRunning) {
+        requestAnimationFrame(detectionLoop);
+      }
+    }
+
+    async function start() {
+      if (isRunning) return;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus("Camera API not supported in this browser.");
+        return;
+      }
+
+      setStatus("Initializing…");
+
+      initAudio(); // needs user gesture (button tap) on iOS
+
+      await initCamera();
+      await initModel();
+
+      isRunning = true;
+      lastThumbsUpState = false;
+      detectionLoop();
+    }
+
+    function stop() {
+      isRunning = false;
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      video.srcObject = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setStatus("Stopped. Tap Start Camera to run again.");
+      logEl.textContent = "Detection paused.";
+      lastThumbsUpState = false;
+    }
+
+    startBtn.addEventListener("click", () => start());
+    stopBtn.addEventListener("click", () => stop());
+
+    // Optional: pause detection when page is hidden
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && isRunning) {
+        stop();
+      }
+    });
+  </script>
+</body>
+</html>
