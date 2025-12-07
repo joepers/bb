@@ -1,484 +1,785 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Better Buy – UPC Scanner</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Barcode/QR scanner library -->
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
+  <title>Better Buy – Unit Cost Comparator</title>
+  <meta name="description" content="A single-file web app to compare grocery unit prices and spot the better buy." />
   <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --text: #111827;
+      --accent: #2563eb;
+      --accent-soft: #e0edff;
+      --danger: #dc2626;
+      --warning: #f97316;
+      --ring: #d1d5db;
+      --border: #e5e7eb;
+    }
+
+    html, body { height: 100%; }
+
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      padding: 1rem;
-      background: #f4f5f7;
-      color: #222;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans",
+        "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: var(--bg);
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 0.25rem;
-    }
-    .subtitle {
-      text-align: center;
-      font-size: 0.9rem;
-      color: #555;
-      margin-bottom: 1rem;
-    }
-    .container {
-      max-width: 900px;
+
+    .wrap {
+      max-width: 1100px;
       margin: 0 auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 1rem 1.25rem 1.5rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding: 24px 16px 32px;
     }
-    #reader {
-      width: 100%;
-      max-width: 500px;
-      margin: 0.5rem auto 1rem;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #000;
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
     }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-size: clamp(22px, 3vw, 28px);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .brand .dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 999px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: center;
-      margin-bottom: 0.5rem;
+      gap: 12px;
+      align-items: flex-end;
     }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    select,
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      background: #ffffff;
+      border: 1px solid var(--ring);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
     button {
-      border: none;
+      border: 1px solid var(--ring);
+      background: #ffffff;
+      color: var(--text);
+      padding: 9px 13px;
       border-radius: 999px;
-      padding: 0.5rem 1rem;
-      font-size: 0.9rem;
       cursor: pointer;
-      background: #2563eb;
-      color: #fff;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.1s ease;
     }
-    button.secondary {
-      background: #6b7280;
+
+    button:hover {
+      background: #f3f4f6;
+      border-color: #cbd5f5;
+      transform: translateY(-1px);
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+
+    .primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+      font-weight: 600;
     }
-    #scan-status {
-      text-align: center;
-      font-size: 0.85rem;
-      margin-bottom: 1rem;
-      color: #2563eb;
-      min-height: 1.2em;
+
+    .primary:hover {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
     }
+
+    .ghost {
+      background: transparent;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
+      font-size: 14px;
     }
-    th, td {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 0.4rem;
+
+    th,
+    td {
       text-align: left;
-      vertical-align: top;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
     }
+
     th {
-      background: #f9fafb;
-      font-weight: 600;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
-    tr.best {
+
+    tbody tr {
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .badge {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid #d0e0ff;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 500;
+    }
+
+    .good {
       background: #dcfce7;
+      color: #166534;
+      border-color: #86efac;
     }
-    input[type="text"],
-    input[type="number"],
-    select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 0.25rem 0.35rem;
-      font-size: 0.85rem;
-      border-radius: 6px;
-      border: 1px solid #d1d5db;
+
+    .warn {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fbbf24;
     }
-    input[readonly] {
-      background: #f9fafb;
-      color: #4b5563;
+
+    .row-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
     }
-    .footer-note {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin-top: 0.5rem;
+
+    .num {
+      font-variant-numeric: tabular-nums;
     }
-    #result {
-      margin-top: 0.75rem;
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-    .upc-breakdown {
-      margin-top: 0.25rem;
-      font-size: 0.7rem;
-      color: #6b7280;
+
+    .foot {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.25rem 0.5rem;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
     }
-    .upc-breakdown span {
-      white-space: nowrap;
+
+    details.how {
+      margin: 14px 0 8px;
     }
-    @media (max-width: 700px) {
-      table {
-        font-size: 0.8rem;
+
+    details.how[open] summary {
+      color: var(--accent);
+    }
+
+    summary {
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 6px;
+      transition: transform 0.15s ease;
+      color: var(--muted);
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(12, 1fr);
+    }
+
+    .col-12 {
+      grid-column: span 12;
+    }
+
+    .col-6 {
+      grid-column: span 6;
+    }
+
+    .col-4 {
+      grid-column: span 4;
+    }
+
+    .col-3 {
+      grid-column: span 3;
+    }
+
+    @media (max-width: 840px) {
+      .col-6,
+      .col-4,
+      .col-3 {
+        grid-column: span 12;
       }
-      th, td {
-        padding: 0.3rem;
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
       }
+
+      .controls {
+        width: 100%;
+      }
+    }
+
+    .strike {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    .link {
+      color: #2563eb;
+      text-decoration: underline;
+      text-underline-offset: 2px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Better Buy – UPC Scanner</h1>
-    <div class="subtitle">
-      Scan 2+ items, auto-look up SKU info, enter price, and I’ll highlight the best value.
-    </div>
+  <div class="wrap">
+    <header>
+      <div class="logo">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <div class="brand">
+            Better Buy
+            <span class="badge">Unit Cost</span>
+          </div>
+          <div class="sub">
+            Compare groceries by unit price – quickly see the best value.
+          </div>
+        </div>
+      </div>
+      <div class="controls card" role="region" aria-label="Controls">
+        <label>
+          Compare by
+          <select id="compareBy">
+            <optgroup label="Weight">
+              <option value="per_oz">per ounce (oz)</option>
+              <option value="per_lb">per pound (lb)</option>
+              <option value="per_g">per gram (g)</option>
+            </optgroup>
+            <optgroup label="Volume">
+              <option value="per_floz">per fluid ounce (fl oz)</option>
+              <option value="per_l">per liter (L)</option>
+              <option value="per_ml">per milliliter (mL)</option>
+            </optgroup>
+            <optgroup label="Count">
+              <option value="per_each">per each</option>
+            </optgroup>
+          </select>
+        </label>
+        <label title="Apply % discount to all items (e.g., storewide coupon)">
+          Global discount %
+          <input id="globalDiscount" type="number" min="0" max="100" step="0.1" placeholder="0" />
+        </label>
+        <label title="Sales tax % to include in final price (leave blank to exclude)">
+          Tax %
+          <input id="taxPct" type="number" min="0" max="50" step="0.1" placeholder="0" />
+        </label>
+        <button id="addRow" class="primary" title="Add a new item (or press Enter from last field)">+ Add item</button>
+        <button id="sortAsc" title="Sort by best (lowest) unit price">Sort by best</button>
+        <button id="clearAll" class="ghost" title="Clear the table">Clear</button>
+        <button id="exportBtn" class="ghost" title="Export your list to a file">Export</button>
+        <button id="importBtn" class="ghost" title="Import a list from a file">Import</button>
+      </div>
+    </header>
 
-    <div class="controls">
-      <button id="start-scan">Start Scanner</button>
-      <button id="stop-scan" class="secondary" disabled>Stop Scanner</button>
-      <button id="compare">Compare Items</button>
-      <button id="print" class="secondary">Print</button>
-    </div>
+    <section class="card" aria-live="polite">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:18%">Item</th>
+            <th style="width:11%">Price ($)</th>
+            <th style="width:9%" title="Pack count multiplies size (e.g., 12-pack)">Pack</th>
+            <th style="width:12%">Size</th>
+            <th style="width:12%">Unit</th>
+            <th style="width:11%" title="Optional extra discount on this specific item">Disc. %</th>
+            <th style="width:15%">Unit price</th>
+            <th style="width:8%">Notes</th>
+            <th style="width:4%"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="foot">
+        <div>
+          <span class="badge">Tip</span>
+          Use the same unit family (weight / volume / count) for true apples-to-apples. Mixed families are flagged.
+        </div>
+        <div id="mixWarn" class="warn badge" style="display:none">Mixed unit families detected</div>
+      </div>
+    </section>
 
-    <div id="scan-status"></div>
-    <div id="reader"></div>
+    <details class="how card">
+      <summary>How to use + examples</summary>
+      <ul>
+        <li><strong>Add items</strong> with price, pack (optional), size, and unit. E.g., Cereal A: $3.99, 18 oz → Unit price shows per your <em>Compare by</em> setting.</li>
+        <li><strong>Global discount</strong> applies to all items (e.g., 10% off day). Add <strong>Tax %</strong> to include tax in the unit price.</li>
+        <li><strong>Disc. %</strong> per row handles coupons or manager specials on that item.</li>
+        <li><strong>Sort by best</strong> to bring the lowest unit price to the top. The best price is highlighted.</li>
+        <li>Everything saves automatically in your browser (no internet needed). Use <strong>Export/Import</strong> to move lists between devices.</li>
+      </ul>
+      <p class="sub">
+        Supported units: <em>Weight</em> – mg, g, kg, oz, lb. <em>Volume</em> – ml, l, floz, cup, pt, qt, gal. <em>Count</em> – each.
+      </p>
+    </details>
 
-    <table id="items-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>UPC & Breakdown</th>
-          <th>Description</th>
-          <th>Size</th>
-          <th>Unit</th>
-          <th>Price ($)</th>
-          <th>Unit Price</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- rows added here -->
-      </tbody>
-    </table>
-
-    <div id="result"></div>
-
-    <div class="footer-note">
-      UPC-A: <b>1</b> digit number system, <b>5</b> digits manufacturer, <b>5</b> digits product code, <b>1</b> check digit.  
-      Product code identifies the SKU; size comes from the product database, not from the digits themselves.
-    </div>
+    <footer class="sub" style="margin-top: 10px;">
+      Made with ♥ to help you make the better buy. – <span class="badge">No tracking. 100% offline.</span>
+    </footer>
   </div>
 
+  <input id="filePicker" type="file" accept="application/json" style="display:none" />
+
   <script>
-    let html5QrCode = null;
-    let itemCount = 0;
+    (function () {
+      // --- Unit conversion maps ---
+      const FAMILIES = {
+        weight: {
+          base: 'oz',
+          map: { mg: 1 / 28349.523125, g: 1 / 28.349523125, kg: 35.27396195, oz: 1, lb: 16 }
+        },
+        volume: {
+          base: 'floz',
+          map: { ml: 1 / 29.5735295625, l: 33.8140227018, floz: 1, cup: 8, pt: 16, qt: 32, gal: 128 }
+        },
+        count: {
+          base: 'each',
+          map: { each: 1 }
+        }
+      };
 
-    const startBtn = document.getElementById("start-scan");
-    const stopBtn = document.getElementById("stop-scan");
-    const statusEl = document.getElementById("scan-status");
-    const tableBody = document.querySelector("#items-table tbody");
-    const resultEl = document.getElementById("result");
+      const UNIT_FAMILY = {
+        mg: 'weight', g: 'weight', kg: 'weight', oz: 'weight', lb: 'weight',
+        ml: 'volume', l: 'volume', floz: 'volume', cup: 'volume', pt: 'volume', qt: 'volume', gal: 'volume',
+        each: 'count'
+      };
 
-    // --- Helpers: UPC parsing -------------------------------------------------
+      const COMPARE_OPTIONS = {
+        per_oz: { family: 'weight', base: 'oz', label: 'per oz' },
+        per_lb: { family: 'weight', base: 'lb', label: 'per lb' },
+        per_g: { family: 'weight', base: 'g', label: 'per g' },
+        per_floz: { family: 'volume', base: 'floz', label: 'per fl oz' },
+        per_l: { family: 'volume', base: 'l', label: 'per L' },
+        per_ml: { family: 'volume', base: 'ml', label: 'per mL' },
+        per_each: { family: 'count', base: 'each', label: 'each' }
+      };
 
-    function normalizeUPC(raw) {
-      // Strip non-digits; convert EAN-13 with leading 0 to UPC-A
-      const digits = raw.replace(/\D/g, "");
-      if (digits.length === 13 && digits.startsWith("0")) {
-        return digits.slice(1);
+      const tbody = document.getElementById('tbody');
+      const compareBy = document.getElementById('compareBy');
+      const globalDiscount = document.getElementById('globalDiscount');
+      const taxPct = document.getElementById('taxPct');
+      const mixWarn = document.getElementById('mixWarn');
+      const filePicker = document.getElementById('filePicker');
+
+      const state = { rows: [], idCounter: 0 };
+      const STORAGE_KEY = 'better-buy-v2';
+
+      function currency(n) {
+        if (Number.isNaN(n) || !Number.isFinite(n)) return '—';
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
       }
-      return digits;
-    }
+      function num(n, d = 3) {
+        if (Number.isNaN(n) || !Number.isFinite(n)) return '—';
+        return Number(n)
+          .toFixed(d)
+          .replace(/\.0+$/, '')
+          .replace(/(\.\d*?[1-9])0+$/, '$1');
+      }
 
-    function parseUPC(upc) {
-      const digits = normalizeUPC(upc);
-      if (digits.length !== 12) {
+      function createRow(data = {}) {
+        const id = data.id ?? (++state.idCounter);
+        const tr = document.createElement('tr');
+        tr.dataset.id = id;
+
+        tr.innerHTML = `
+      <td><input aria-label="Item name" type="text" class="w" value="${esc(data.name || '')}" placeholder="e.g., Cereal A"/></td>
+      <td><input aria-label="Price" type="number" step="0.01" min="0" value="${esc(data.price ?? '')}"/></td>
+      <td><input aria-label="Pack count" type="number" step="1" min="1" value="${esc(data.pack ?? 1)}"/></td>
+      <td><input aria-label="Size" type="number" step="0.01" min="0" value="${esc(data.size ?? '')}"/></td>
+      <td>
+        <select aria-label="Unit">
+          ${unitOptions(data.unit || 'oz')}
+        </select>
+      </td>
+      <td><input aria-label="Row discount percent" type="number" step="0.1" min="0" max="100" value="${esc(data.disc ?? '')}"/></td>
+      <td class="num uprice">—</td>
+      <td><input aria-label="Notes" type="text" value="${esc(data.note || '')}" placeholder="optional"/></td>
+      <td class="row-actions">
+        <button class="ghost" title="Duplicate">⎘</button>
+        <button class="ghost" title="Delete">✕</button>
+      </td>
+    `;
+
+        tbody.appendChild(tr);
+
+        tr.querySelectorAll('input, select').forEach(el => {
+          el.addEventListener('input', onChange);
+          el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') addRow();
+          });
+        });
+
+        tr.querySelectorAll('button')[0].addEventListener('click', () => duplicateRow(id));
+        tr.querySelectorAll('button')[1].addEventListener('click', () => deleteRow(id));
+
+        state.rows.push({ id, tr });
+        recalc();
+      }
+
+      function unitOptions(selected) {
+        const groups = [
+          { label: 'Weight', units: ['mg', 'g', 'kg', 'oz', 'lb'] },
+          { label: 'Volume', units: ['ml', 'l', 'floz', 'cup', 'pt', 'qt', 'gal'] },
+          { label: 'Count', units: ['each'] }
+        ];
+        return groups
+          .map(
+            g =>
+              `<optgroup label="${g.label}">` +
+              g.units
+                .map(u => `<option value="${u}" ${u === selected ? 'selected' : ''}>${u}</option>`)
+                .join('') +
+              `</optgroup>`
+          )
+          .join('');
+      }
+
+      function getRowData(tr) {
+        const [nameEl, priceEl, packEl, sizeEl, unitEl, discEl, upriceEl, noteEl] =
+          tr.querySelectorAll('input, select, .uprice');
         return {
-          raw: digits,
-          numberSystem: null,
-          manufacturer: null,
-          product: null,
-          checkDigit: null
+          name: nameEl.value.trim(),
+          price: toNum(priceEl.value),
+          pack: toInt(packEl.value) || 1,
+          size: toNum(sizeEl.value),
+          unit: unitEl.value,
+          disc: toNum(discEl.value),
+          upriceEl,
+          note: noteEl.value.trim(),
+          tr
         };
       }
-      return {
-        raw: digits,
-        numberSystem: digits[0],
-        manufacturer: digits.slice(1, 6),
-        product: digits.slice(6, 11),
-        checkDigit: digits[11]
-      };
-    }
-
-    // --- Helpers: Try to parse quantity like "500 ml" or "16.9 fl oz" --------
-
-    function parseQuantity(quantityStr) {
-      if (!quantityStr) return null;
-
-      // Common forms: "500 ml", "16.9 fl oz", "1 L", "12 oz", "24 x 500 ml" etc.
-      // We’ll grab the first number and unit-ish token that follows.
-      const match = quantityStr.match(/(\d+(?:[\.,]\d+)?)\s*([a-zA-Z]+(?:\s*[a-zA-Z]+)?)/);
-      if (!match) return null;
-
-      let value = parseFloat(match[1].replace(",", "."));
-      let unit = match[2].trim().toLowerCase();
-
-      // Normalize some unit names to something consistent with our dropdown
-      if (unit === "ml" || unit === "milliliter" || unit === "milliliters") {
-        unit = "mL";
-      } else if (unit === "l" || unit === "liter" || unit === "liters") {
-        unit = "L";
-      } else if (unit === "g" || unit === "gram" || unit === "grams") {
-        unit = "g";
-      } else if (unit === "kg" || unit === "kilogram" || unit === "kilograms") {
-        unit = "kg";
-      } else if (unit === "oz" || unit === "ounce" || unit === "ounces") {
-        unit = "oz";
-      } else if (unit === "fl" || unit === "floz" || unit === "fl.oz" || unit === "fl oz") {
-        unit = "fl oz";
-      } else if (unit.includes("fl") && unit.includes("oz")) {
-        unit = "fl oz";
-      } else if (unit === "count" || unit === "ct") {
-        unit = "count";
+      function toNum(v) {
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n : NaN;
       }
-
-      return { value, unit };
-    }
-
-    // --- API lookup: OpenFoodFacts (no key needed for many grocery items) -----
-
-    async function lookupUPCWithAPI(upc, row) {
-      try {
-        const url = `https://world.openfoodfacts.org/api/v0/product/${upc}.json`;
-        const res = await fetch(url);
-        if (!res.ok) {
-          console.warn("Lookup failed:", res.status);
-          return;
-        }
-        const data = await res.json();
-        if (data.status !== 1 || !data.product) {
-          console.warn("Product not found for UPC", upc);
-          return;
-        }
-
-        const product = data.product;
-
-        // Fill description
-        const descInput = row.querySelector("td:nth-child(3) input");
-        const existingDesc = descInput.value.trim();
-        const name =
-          product.product_name ||
-          product.generic_name ||
-          product.brands ||
-          "";
-        if (!existingDesc && name) {
-          descInput.value = name;
-        }
-
-        // Try to parse quantity into size + unit
-        const qty = product.quantity || product.serving_size || "";
-        const parsedQty = parseQuantity(qty);
-        if (parsedQty) {
-          const sizeInput = row.querySelector(".size-input");
-          const unitSelect = row.querySelector(".unit-select");
-          if (!sizeInput.value) sizeInput.value = parsedQty.value;
-          // Only override unit if it’s still the default
-          if (unitSelect.value === "fl oz" || !unitSelect.value) {
-            // If parsed unit is one of our options, use it
-            const options = Array.from(unitSelect.options).map(o => o.value);
-            if (options.includes(parsedQty.unit)) {
-              unitSelect.value = parsedQty.unit;
-            }
-          }
-        }
-
-      } catch (err) {
-        console.error("Error during UPC lookup", err);
+      function toInt(v) {
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) ? n : NaN;
       }
-    }
-
-    // --- Row creation ---------------------------------------------------------
-
-    function addItem(upcRaw) {
-      const upcNorm = normalizeUPC(upcRaw);
-      const parsed = parseUPC(upcNorm);
-
-      itemCount++;
-      const row = document.createElement("tr");
-
-      row.innerHTML = `
-        <td>${itemCount}</td>
-        <td>
-          <div><input type="text" value="${parsed.raw || upcNorm}" readonly /></div>
-          <div class="upc-breakdown">
-            <span>NS: ${parsed.numberSystem ?? "?"}</span>
-            <span>Mfr: ${parsed.manufacturer ?? "?"}</span>
-            <span>Prod: ${parsed.product ?? "?"}</span>
-            <span>Chk: ${parsed.checkDigit ?? "?"}</span>
-          </div>
-        </td>
-        <td><input type="text" placeholder="Optional name" /></td>
-        <td><input type="number" min="0" step="0.01" class="size-input" placeholder="e.g. 16.9" /></td>
-        <td>
-          <select class="unit-select">
-            <option value="fl oz">fl oz</option>
-            <option value="oz">oz</option>
-            <option value="lb">lb</option>
-            <option value="mL">mL</option>
-            <option value="L">L</option>
-            <option value="g">g</option>
-            <option value="kg">kg</option>
-            <option value="count">count</option>
-          </select>
-        </td>
-        <td><input type="number" min="0" step="0.01" class="price-input" placeholder="e.g. 0.25" /></td>
-        <td class="unit-price-cell">—</td>
-      `;
-
-      tableBody.appendChild(row);
-
-      // Live lookup of SKU info (description, size, unit)
-      lookupUPCWithAPI(parsed.raw || upcNorm, row);
-
-      const sizeInput = row.querySelector(".size-input");
-      const priceInput = row.querySelector(".price-input");
 
       function recalc() {
-        const size = parseFloat(sizeInput.value);
-        const price = parseFloat(priceInput.value);
-        const cell = row.querySelector(".unit-price-cell");
+        const rows = state.rows.map(r => getRowData(r.tr));
 
-        if (size > 0 && price > 0) {
-          const unitPrice = price / size;
-          row.dataset.unitPrice = unitPrice;
-          cell.textContent = "$" + unitPrice.toFixed(4);
-        } else {
-          row.dataset.unitPrice = "";
-          cell.textContent = "—";
-        }
-      }
+        const cmp = COMPARE_OPTIONS[compareBy.value];
+        const gdisc = clamp(toNum(globalDiscount.value), 0, 100) || 0;
+        const tax = Math.max(0, toNum(taxPct.value) || 0) / 100;
 
-      sizeInput.addEventListener("input", recalc);
-      priceInput.addEventListener("input", recalc);
-    }
+        let families = new Set();
 
-    // --- Scanner callbacks ----------------------------------------------------
+        // Compute unit prices
+        rows.forEach(row => {
+          let { price, pack, size, unit, disc } = row;
+          if (!isFinite(price) || !isFinite(size) || !isFinite(pack) || pack <= 0 || size <= 0) {
+            row.unitPrice = NaN;
+            row.family = UNIT_FAMILY[unit];
+            return;
+          }
+          const fam = UNIT_FAMILY[unit];
+          row.family = fam;
+          families.add(fam);
 
-    function onScanSuccess(decodedText, decodedResult) {
-      const upcNorm = normalizeUPC(decodedText);
+          // Convert total size to compare base family base unit (not display yet)
+          const famMap = FAMILIES[fam];
+          const toBase = famMap ? famMap.map[unit] : NaN; // convert entered unit -> family base (oz/floz/each)
+          const totalBaseUnits = pack * size * (toBase || NaN);
 
-      // Avoid rapid duplicate scans of the same code
-      const lastUPC = tableBody.lastElementChild?.querySelector("td:nth-child(2) input")?.value;
-      if (upcNorm === lastUPC) return;
+          let eff = price;
+          const rowDisc = clamp(disc || 0, 0, 100);
+          if (gdisc > 0) eff *= 1 - gdisc / 100;
+          if (rowDisc > 0) eff *= 1 - rowDisc / 100;
+          if (tax > 0) eff *= 1 + tax;
 
-      addItem(upcNorm);
-      const parsed = parseUPC(upcNorm);
-      statusEl.textContent =
-        "Scanned UPC: " +
-        (parsed.raw || upcNorm) +
-        (parsed.product ? " (Product Code: " + parsed.product + ")" : "");
-    }
+          const perBase = eff / totalBaseUnits; // price per (oz | fl oz | each)
 
-    function onScanFailure(error) {
-      // Keep UI quiet to avoid spam; log if needed
-      // console.log(error);
-    }
+          // If compare mode asks for a different base (e.g., per lb), convert
+          row.unitPrice = convertPer(perBase, fam, cmp);
+        });
 
-    // --- Scanner controls -----------------------------------------------------
+        // Mixed family warning (only if more than one non-empty family present)
+        const nonEmptyFamilies = new Set(rows.filter(r => isFinite(r.unitPrice)).map(r => r.family));
+        mixWarn.style.display = nonEmptyFamilies.size > 1 ? 'inline-block' : 'none';
 
-    async function startScanner() {
-      try {
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("reader");
-        }
-
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: 250,
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.UPC_A,
-              Html5QrcodeSupportedFormats.UPC_E,
-              Html5QrcodeSupportedFormats.EAN_13,
-              Html5QrcodeSupportedFormats.CODE_128
-            ]
-          },
-          onScanSuccess,
-          onScanFailure
+        // Determine best price among comparable rows
+        const comparable = rows.filter(
+          r => isFinite(r.unitPrice) && r.family === COMPARE_OPTIONS[compareBy.value].family
         );
+        const best = comparable.length ? Math.min(...comparable.map(r => r.unitPrice)) : Infinity;
 
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        statusEl.textContent = "Scanner running… point the camera at a barcode.";
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = "Error starting scanner: " + err;
+        // Render
+        rows.forEach(row => {
+          const el = row.upriceEl;
+          if (!isFinite(row.unitPrice)) {
+            el.textContent = '—';
+            el.className = 'num uprice';
+            row.tr.dataset.rank = '';
+            return;
+          }
+          const isBest = Math.abs(row.unitPrice - best) < 1e-9;
+          el.textContent = `${currency(row.unitPrice)} ${COMPARE_OPTIONS[compareBy.value].label}`;
+          el.className = 'num uprice ' + (isBest ? 'good badge' : '');
+          row.tr.dataset.rank = row.unitPrice;
+        });
+
+        save();
       }
-    }
 
-    async function stopScanner() {
-      if (html5QrCode) {
+      function convertPer(perBase, fam, cmp) {
+        // perBase: price per family-base (oz | fl oz | each)
+        const base = FAMILIES[fam]?.base;
+        if (!base) return NaN;
+
+        // Convert from family-base to desired compare base
+        const want = cmp.base;
+        if (fam !== cmp.family) return perBase; // different family; display as calculated (will be flagged by mix)
+
+        if (base === want) return perBase; // already per oz / per fl oz / each
+
+        // Weight conversions for per-unit price
+        if (fam === 'weight') {
+          if (want === 'lb') return perBase * 16; // $/oz -> $/lb
+          if (want === 'g') return perBase / 0.03527396195; // $/oz -> $/g
+        }
+        if (fam === 'volume') {
+          if (want === 'l') return perBase / 0.0338140227018; // $/fl oz -> $/L
+          if (want === 'ml') return (perBase / 0.0338140227018) / 1000; // $/fl oz -> $/mL
+        }
+        // Count has only each
+        return perBase;
+      }
+
+      function clamp(n, min, max) {
+        return Math.min(max, Math.max(min, n));
+      }
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      function onChange() {
+        recalc();
+      }
+
+      function addRow(prefill = {}) {
+        createRow(prefill);
+        focusLastRow();
+      }
+      function focusLastRow() {
+        const last = tbody.lastElementChild;
+        if (!last) return;
+        const input = last.querySelector('input');
+        if (input) input.focus();
+      }
+      function deleteRow(id) {
+        const idx = state.rows.findIndex(r => r.id === id);
+        if (idx >= 0) {
+          tbody.removeChild(state.rows[idx].tr);
+          state.rows.splice(idx, 1);
+          recalc();
+        }
+      }
+      function duplicateRow(id) {
+        const row = state.rows.find(r => r.id === id);
+        if (!row) return;
+        const data = getRowData(row.tr);
+        addRow({
+          name: data.name,
+          price: data.price,
+          pack: data.pack,
+          size: data.size,
+          unit: data.unit,
+          disc: data.disc,
+          note: data.note
+        });
+      }
+
+      function sortByBest() {
+        const rows = Array.from(tbody.children);
+        rows.sort((a, b) => {
+          const ra = parseFloat(a.dataset.rank ?? 'Infinity');
+          const rb = parseFloat(b.dataset.rank ?? 'Infinity');
+          return ra - rb;
+        });
+        rows.forEach(r => tbody.appendChild(r));
+      }
+
+      function save() {
+        const data = {
+          compareBy: compareBy.value,
+          globalDiscount: globalDiscount.value,
+          taxPct: taxPct.value,
+          rows: state.rows.map(r => {
+            const d = getRowData(r.tr);
+            return {
+              name: d.name,
+              price: d.price,
+              pack: d.pack,
+              size: d.size,
+              unit: d.unit,
+              disc: d.disc,
+              note: d.note
+            };
+          })
+        };
         try {
-          await html5QrCode.stop();
-          statusEl.textContent = "Scanner stopped.";
-        } catch (err) {
-          console.error(err);
-          statusEl.textContent = "Error stopping scanner: " + err;
-        }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
       }
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-    }
+      function load() {
+        try {
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+          if (!data) return;
+          compareBy.value = data.compareBy || 'per_oz';
+          globalDiscount.value = data.globalDiscount || '';
+          taxPct.value = data.taxPct || '';
+          (data.rows || []).forEach(r => addRow(r));
+        } catch (e) {}
+      }
 
-    // --- Comparison logic -----------------------------------------------------
+      function clearAll() {
+        state.rows.forEach(r => r.tr.remove());
+        state.rows = [];
+        recalc();
+        save();
+      }
 
-    function compareItems() {
-      const rows = Array.from(tableBody.querySelectorAll("tr"));
-      rows.forEach(r => r.classList.remove("best"));
-      resultEl.textContent = "";
-
-      let bestRow = null;
-      let bestPrice = Infinity;
-
-      rows.forEach(row => {
-        const value = parseFloat(row.dataset.unitPrice);
-        if (!isNaN(value) && value > 0 && value < bestPrice) {
-          bestPrice = value;
-          bestRow = row;
-        }
+      // --- Export / Import ---
+      function exportData() {
+        const payload = localStorage.getItem(STORAGE_KEY) || JSON.stringify({});
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'better-buy-list.json';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      function importData() {
+        filePicker.click();
+      }
+      filePicker.addEventListener('change', e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            clearAll();
+            compareBy.value = data.compareBy || 'per_oz';
+            globalDiscount.value = data.globalDiscount || '';
+            taxPct.value = data.taxPct || '';
+            (data.rows || []).forEach(r => addRow(r));
+            recalc();
+          } catch (err) {
+            alert('Invalid file.');
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
       });
 
-      if (!bestRow) {
-        resultEl.textContent = "Enter size and price for at least two items to compare.";
-        return;
+      // --- Events ---
+      document.getElementById('addRow').addEventListener('click', () => addRow());
+      document.getElementById('sortAsc').addEventListener('click', sortByBest);
+      document.getElementById('clearAll').addEventListener('click', () => {
+        if (confirm('Clear all items?')) clearAll();
+      });
+      document.getElementById('exportBtn').addEventListener('click', exportData);
+      document.getElementById('importBtn').addEventListener('click', importData);
+      compareBy.addEventListener('change', recalc);
+      globalDiscount.addEventListener('input', recalc);
+      taxPct.addEventListener('input', recalc);
+
+      // --- Init ---
+      load();
+      if (state.rows.length === 0) {
+        addRow({ name: 'Cereal A', price: 3.99, pack: 1, size: 18, unit: 'oz' });
+        addRow({ name: 'Cereal B', price: 5.49, pack: 1, size: 24, unit: 'oz' });
       }
-
-      bestRow.classList.add("best");
-
-      const upc = bestRow.querySelector("td:nth-child(2) input").value;
-      const desc = bestRow.querySelector("td:nth-child(3) input").value || "(no description)";
-      const unit = bestRow.querySelector(".unit-select").value;
-
-      resultEl.textContent =
-        `Best value: ${desc} (UPC ${upc}) at $${bestPrice.toFixed(4)} per ${unit}.`;
-    }
-
-    // --- Wire up buttons ------------------------------------------------------
-
-    document.getElementById("start-scan").addEventListener("click", startScanner);
-    document.getElementById("stop-scan").addEventListener("click", stopScanner);
-    document.getElementById("compare").addEventListener("click", compareItems);
-    document.getElementById("print").addEventListener("click", () => window.print());
+    })();
   </script>
 </body>
 </html>
