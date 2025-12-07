@@ -6,7 +6,14 @@
   <title>Better Buy – Unit Cost Comparator</title>
   <meta name="description" content="A single-file web app to compare grocery unit prices and spot the better buy." />
   <style>
+    /* ------------------------------------------------------------------
+       THEME SYSTEM
+       - We use CSS variables + body[data-theme="..."] overrides.
+       - JS toggles data-theme on <body> and saves to localStorage.
+       ------------------------------------------------------------------ */
+
     :root {
+      /* Base / fallback values (overridden by themes) */
       --bg: #f4f5f7;
       --card: #ffffff;
       --muted: #6b7280;
@@ -17,6 +24,82 @@
       --warning: #f97316;
       --ring: #d1d5db;
       --border: #e5e7eb;
+
+      --header-bg: transparent;
+      --header-text: var(--text);
+      --header-sub: var(--muted);
+    }
+
+    /* Default / initial theme: Color Pop */
+    body[data-theme="color-pop"] {
+      --bg: #fdfbff;
+      --card: #ffffff;
+      --muted: #6b6a7f;
+      --text: #14121c;
+      --accent: #ff4d8d;
+      --accent-soft: #ffe3f1;
+      --danger: #ff4b6a;
+      --warning: #ff9f1c;
+      --ring: #f5b4ff;
+      --border: #f2d8ff;
+
+      --header-bg: linear-gradient(120deg, #ff4d8d, #7b5cff, #00c6b8);
+      --header-text: #ffffff;
+      --header-sub: #fdf2ff;
+    }
+
+    /* Fresh Green – organic / farmer’s market vibe */
+    body[data-theme="fresh-green"] {
+      --bg: #f5fbf7;
+      --card: #ffffff;
+      --muted: #5b6a5f;
+      --text: #123024;
+      --accent: #22c55e;
+      --accent-soft: #dcfce7;
+      --danger: #b91c1c;
+      --warning: #f97316;
+      --ring: #a7f3d0;
+      --border: #d1fae5;
+
+      --header-bg: linear-gradient(135deg, #16a34a, #22c55e, #14b8a6);
+      --header-text: #f0fdf4;
+      --header-sub: #e0fbea;
+    }
+
+    /* Value Orange – discount / “deal hunter” feel */
+    body[data-theme="value-orange"] {
+      --bg: #fffaf3;
+      --card: #ffffff;
+      --muted: #7c5a3a;
+      --text: #3b1f0a;
+      --accent: #f97316;
+      --accent-soft: #ffedd5;
+      --danger: #dc2626;
+      --warning: #facc15;
+      --ring: #fed7aa;
+      --border: #fed7aa;
+
+      --header-bg: radial-gradient(circle at top left, #f97316, #ea580c, #facc15);
+      --header-text: #fffbeb;
+      --header-sub: #fef3c7;
+    }
+
+    /* Midnight Premium – dark mode / upscale */
+    body[data-theme="midnight-premium"] {
+      --bg: #020617;
+      --card: #0b1220;
+      --muted: #9ca3ff;
+      --text: #e5e7eb;
+      --accent: #eab308;
+      --accent-soft: #422006;
+      --danger: #f87171;
+      --warning: #facc15;
+      --ring: #4b5563;
+      --border: #1f2937;
+
+      --header-bg: linear-gradient(135deg, #020617, #111827, #4b5563);
+      --header-text: #f9fafb;
+      --header-sub: #e5e7eb;
     }
 
     html, body { height: 100%; }
@@ -28,6 +111,7 @@
         "Apple Color Emoji", "Segoe UI Emoji";
       color: var(--text);
       background: var(--bg);
+      transition: background 0.25s ease, color 0.25s ease;
     }
 
     .wrap {
@@ -42,6 +126,11 @@
       justify-content: space-between;
       gap: 16px;
       margin-bottom: 18px;
+      padding: 18px 18px 20px;
+      border-radius: 18px;
+      background: var(--header-bg);
+      color: var(--header-text);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
     }
 
     .logo {
@@ -51,9 +140,9 @@
     }
 
     .brand {
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      font-size: clamp(22px, 3vw, 30px);
       display: flex;
       align-items: baseline;
       gap: 8px;
@@ -64,10 +153,11 @@
       height: 10px;
       background: var(--accent);
       border-radius: 999px;
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.3);
     }
 
     .sub {
-      color: var(--muted);
+      color: var(--header-sub);
       font-size: 13px;
     }
 
@@ -83,7 +173,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 14px 16px;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
     }
 
     label {
@@ -105,17 +195,29 @@
       padding: 8px 10px;
       outline: none;
       font-size: 14px;
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+    }
+
+    body[data-theme="midnight-premium"] select,
+    body[data-theme="midnight-premium"] input[type="text"],
+    body[data-theme="midnight-premium"] input[type="number"],
+    body[data-theme="midnight-premium"] textarea {
+      background: #020617;
+      color: var(--text);
     }
 
     select:focus,
     input:focus,
     textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
     button {
-      border: 1px solid var(--ring);
+      border: 1px solid transparent;
       background: #ffffff;
       color: var(--text);
       padding: 9px 13px;
@@ -128,13 +230,15 @@
       transition:
         background 0.15s ease,
         border-color 0.15s ease,
-        transform 0.1s ease;
+        transform 0.1s ease,
+        box-shadow 0.15s ease;
     }
 
     button:hover {
       background: #f3f4f6;
       border-color: #cbd5f5;
       transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
     }
 
     .primary {
@@ -142,6 +246,7 @@
       border-color: var(--accent);
       color: #ffffff;
       font-weight: 600;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
     }
 
     .primary:hover {
@@ -151,16 +256,22 @@
 
     .ghost {
       background: transparent;
+      border-color: var(--ring);
     }
-    
-/* Shrink Item, Price, Pack, Size by 50% */
+
+    /* Theme selector button style (we reuse base button + label) */
+    #themeSelect {
+      min-width: 140px;
+    }
+
+    /* Shrink Item, Price, Pack, Size by 50% */
     td:nth-child(1) input,
     td:nth-child(2) input,
     td:nth-child(3) input,
     td:nth-child(4) input {
       width: 50%;
     }
-    
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -189,6 +300,10 @@
       background: #f9fafb;
     }
 
+    body[data-theme="midnight-premium"] tbody tr:hover {
+      background: #020617;
+    }
+
     .badge {
       padding: 3px 8px;
       border-radius: 999px;
@@ -203,6 +318,12 @@
       background: #dcfce7;
       color: #166534;
       border-color: #86efac;
+    }
+
+    body[data-theme="midnight-premium"] .good {
+      background: #14532d;
+      color: #bbf7d0;
+      border-color: #22c55e;
     }
 
     .warn {
@@ -313,9 +434,14 @@
       text-decoration: underline;
       text-underline-offset: 2px;
     }
+
+    footer.sub {
+      margin-top: 10px;
+      color: var(--muted);
+    }
   </style>
 </head>
-<body>
+<body data-theme="color-pop">
   <div class="wrap">
     <header>
       <div class="logo">
@@ -331,6 +457,15 @@
         </div>
       </div>
       <div class="controls card" role="region" aria-label="Controls">
+        <label>
+          Theme
+          <select id="themeSelect">
+            <option value="color-pop">Color Pop</option>
+            <option value="fresh-green">Fresh Green</option>
+            <option value="value-orange">Value Orange</option>
+            <option value="midnight-premium">Midnight Premium</option>
+          </select>
+        </label>
         <label>
           Compare by
           <select id="compareBy">
@@ -400,6 +535,37 @@
 
   <script>
     (function () {
+      // --- Theme handling ---
+      const themeSelect = document.getElementById('themeSelect');
+      const THEME_KEY = 'better-buy-theme';
+      const DEFAULT_THEME = 'color-pop';
+      const ALLOWED_THEMES = ['color-pop', 'fresh-green', 'value-orange', 'midnight-premium'];
+
+      function applyTheme(theme) {
+        const t = ALLOWED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
+        document.body.setAttribute('data-theme', t);
+        if (themeSelect) themeSelect.value = t;
+        try {
+          localStorage.setItem(THEME_KEY, t);
+        } catch (e) {}
+      }
+
+      function loadTheme() {
+        let stored = DEFAULT_THEME;
+        try {
+          stored = localStorage.getItem(THEME_KEY) || DEFAULT_THEME;
+        } catch (e) {}
+        applyTheme(stored);
+      }
+
+      if (themeSelect) {
+        themeSelect.addEventListener('change', () => {
+          applyTheme(themeSelect.value);
+        });
+      }
+
+      loadTheme();
+
       // --- Unit conversion maps ---
       const FAMILIES = {
         weight: {
