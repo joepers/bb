@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Better Buy – Unit Cost Comparator</title>
-  <meta name="description" content="A single-file web app to compare grocery unit prices and spot the better buy." />
   <style>
     :root {
       --bg: #f4f5f7;
@@ -19,310 +18,144 @@
       --border: #e5e7eb;
     }
 
-    html, body { height: 100%; }
-
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans",
-        "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--text);
+      font-family: system-ui, sans-serif;
       background: var(--bg);
+      color: var(--text);
     }
 
     .wrap {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 24px 16px 32px;
+      padding: 24px 16px;
     }
 
     header {
       display: flex;
-      align-items: flex-start;
+      flex-wrap: wrap;
       justify-content: space-between;
-      gap: 16px;
       margin-bottom: 18px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .brand {
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      font-size: clamp(22px, 3vw, 28px);
+      font-size: 26px;
+      font-weight: bold;
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 8px;
     }
 
-    .brand .dot {
-      width: 10px;
-      height: 10px;
-      background: var(--accent);
-      border-radius: 999px;
-    }
-
-    .sub {
-      color: var(--muted);
-      font-size: 13px;
+    .badge {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
     }
 
     .controls {
       display: flex;
+      gap: 8px;
       flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-end;
-    }
-
-    .card {
       background: var(--card);
+      padding: 10px;
+      border-radius: 10px;
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-    }
-
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--muted);
     }
 
     select,
     input[type="text"],
-    input[type="number"],
-    textarea {
-      background: #ffffff;
-      border: 1px solid var(--ring);
-      color: var(--text);
+    input[type="number"] {
+      padding: 6px;
       border-radius: 8px;
-      padding: 8px 10px;
-      outline: none;
+      border: 1px solid var(--ring);
       font-size: 14px;
-    }
-
-    select:focus,
-    input:focus,
-    textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
     }
 
     button {
+      padding: 8px 14px;
+      border-radius: 20px;
       border: 1px solid var(--ring);
-      background: #ffffff;
-      color: var(--text);
-      padding: 9px 13px;
-      border-radius: 999px;
+      background: white;
       cursor: pointer;
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.1s ease;
     }
 
-    button:hover {
-      background: #f3f4f6;
-      border-color: #cbd5f5;
-      transform: translateY(-1px);
-    }
-
-    .primary {
+    button.primary {
       background: var(--accent);
+      color: white;
       border-color: var(--accent);
-      color: #ffffff;
-      font-weight: 600;
     }
 
-    .primary:hover {
-      background: #1d4ed8;
-      border-color: #1d4ed8;
-    }
-
-    .ghost {
-      background: transparent;
+    /* Shrink Item, Price, Pack, Size by 50% */
+    td:nth-child(1) input,
+    td:nth-child(2) input,
+    td:nth-child(3) input,
+    td:nth-child(4) input {
+      width: 50%;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
     }
 
-    th,
-    td {
-      text-align: left;
-      padding: 10px 8px;
+    th, td {
+      padding: 10px;
       border-bottom: 1px solid var(--border);
+      font-size: 14px;
     }
 
     th {
       font-size: 11px;
-      color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      color: var(--muted);
     }
 
-    tbody tr {
-      transition: background 0.15s ease;
-    }
-
-    tbody tr:hover {
-      background: #f9fafb;
-    }
-
-    .badge {
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      border: 1px solid #d0e0ff;
-      color: var(--accent);
-      background: var(--accent-soft);
-      font-weight: 500;
+    .row-actions button {
+      border: none;
+      background: transparent;
+      cursor: pointer;
     }
 
     .good {
       background: #dcfce7;
       color: #166534;
-      border-color: #86efac;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 12px;
     }
 
     .warn {
       background: #fef3c7;
       color: #92400e;
-      border-color: #fbbf24;
+      padding: 2px 6px;
+      border-radius: 8px;
+      border: 1px solid #fbbf24;
     }
 
-    .row-actions {
-      display: flex;
-      gap: 4px;
-      justify-content: flex-end;
-    }
-
-    .num {
-      font-variant-numeric: tabular-nums;
-    }
-
-    .foot {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      color: var(--muted);
+    footer {
+      margin-top: 20px;
       font-size: 12px;
-    }
-
-    details.how {
-      margin: 14px 0 8px;
-    }
-
-    details.how[open] summary {
-      color: var(--accent);
-    }
-
-    summary {
-      cursor: pointer;
-      user-select: none;
-      list-style: none;
-      font-weight: 500;
-      font-size: 14px;
-    }
-
-    summary::-webkit-details-marker {
-      display: none;
-    }
-
-    summary::before {
-      content: "▸";
-      display: inline-block;
-      margin-right: 6px;
-      transition: transform 0.15s ease;
       color: var(--muted);
-    }
-
-    details[open] summary::before {
-      transform: rotate(90deg);
-    }
-
-    .grid {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(12, 1fr);
-    }
-
-    .col-12 {
-      grid-column: span 12;
-    }
-
-    .col-6 {
-      grid-column: span 6;
-    }
-
-    .col-4 {
-      grid-column: span 4;
-    }
-
-    .col-3 {
-      grid-column: span 3;
-    }
-
-    @media (max-width: 840px) {
-      .col-6,
-      .col-4,
-      .col-3 {
-        grid-column: span 12;
-      }
-
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .controls {
-        width: 100%;
-      }
-    }
-
-    .strike {
-      text-decoration: line-through;
-      color: #9ca3af;
-    }
-
-    .link {
-      color: #2563eb;
-      text-decoration: underline;
-      text-underline-offset: 2px;
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header>
-      <div class="logo">
-        <div class="dot" aria-hidden="true"></div>
-        <div>
-          <div class="brand">
-            Better Buy
-            <span class="badge">Unit Cost</span>
-          </div>
-          <div class="sub">
-            Compare groceries by unit price – quickly see the best value.
-          </div>
-        </div>
-      </div>
-      <div class="controls card" role="region" aria-label="Controls">
+      <div class="brand">Better Buy <span class="badge">Unit Cost</span></div>
+
+      <div class="controls">
         <label>
           Compare by
           <select id="compareBy">
@@ -341,295 +174,211 @@
             </optgroup>
           </select>
         </label>
-        <button id="addRow" class="primary" title="Add a new item (or press Enter from last field)">+ Add item</button>
-        <button id="sortAsc" title="Sort by best (lowest) unit price">Sort by best</button>
-        <button id="clearAll" class="ghost" title="Clear the table">Clear</button>
+
+        <button id="addRow" class="primary">+ Add item</button>
+        <button id="sortAsc">Sort by best</button>
+        <button id="clearAll">Clear</button>
       </div>
     </header>
 
-    <section class="card" aria-live="polite">
+    <section>
       <table>
         <thead>
           <tr>
-            <th style="width:20%">Item</th>
-            <th style="width:12%">Price ($)</th>
-            <th style="width:9%" title="Pack count multiplies size (e.g., 12-pack)">Pack</th>
-            <th style="width:13%">Size</th>
-            <th style="width:13%">Unit</th>
-            <th style="width:12%" title="Optional extra discount on this specific item">Disc. %</th>
-            <th style="width:17%">Unit price</th>
-            <th style="width:4%"></th>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Pack</th>
+            <th>Size</th>
+            <th>Unit</th>
+            <th>Disc %</th>
+            <th>Unit Price</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
       </table>
-      <div class="foot">
-        <div>
-          <span class="badge">Tip</span>
-          Use the same unit family (weight / volume / count) for true apples-to-apples. Mixed families are flagged.
-        </div>
-        <div id="mixWarn" class="warn badge" style="display:none">Mixed unit families detected</div>
+
+      <div style="margin-top:8px;">
+        <span id="mixWarn" class="warn" style="display:none">Mixed unit families detected</span>
       </div>
     </section>
 
-    <details class="how card">
-      <summary>How to use + examples</summary>
-      <ul>
-        <li><strong>Add items</strong> with price, pack (optional), size, and unit. E.g., Cereal A: $3.99, 18 oz → Unit price shows per your <em>Compare by</em> setting.</li>
-        <li><strong>Disc. %</strong> per row handles coupons or manager specials on that item.</li>
-        <li><strong>Sort by best</strong> to bring the lowest unit price to the top. The best price is highlighted.</li>
-        <li>Everything saves automatically in your browser (no internet needed).</li>
-      </ul>
-      <p class="sub">
-        Supported units: <em>Weight</em> – mg, g, kg, oz, lb. <em>Volume</em> – ml, l, floz, cup, pt, qt, gal. <em>Count</em> – each.
-      </p>
-    </details>
-
-    <footer class="sub" style="margin-top: 10px;">
-      Made with ♥ to help you make the better buy. – <span class="badge">No tracking. 100% offline.</span>
-    </footer>
+    <footer>Made for quick in-aisle comparisons. Saves locally. No tracking.</footer>
   </div>
 
   <script>
     (function () {
-      // --- Unit conversion maps ---
       const FAMILIES = {
-        weight: {
-          base: 'oz',
-          map: { mg: 1 / 28349.523125, g: 1 / 28.349523125, kg: 35.27396195, oz: 1, lb: 16 }
-        },
-        volume: {
-          base: 'floz',
-          map: { ml: 1 / 29.5735295625, l: 33.8140227018, floz: 1, cup: 8, pt: 16, qt: 32, gal: 128 }
-        },
-        count: {
-          base: 'each',
-          map: { each: 1 }
-        }
+        weight: { base: "oz", map: { mg: 1/28349.523125, g: 1/28.349523125, kg: 35.27396195, oz: 1, lb: 16 }},
+        volume: { base: "floz", map: { ml: 1/29.5735295625, l: 33.8140227018, floz:1, cup:8, pt:16, qt:32, gal:128 }},
+        count:  { base:"each", map:{ each:1 }},
       };
 
       const UNIT_FAMILY = {
-        mg: 'weight', g: 'weight', kg: 'weight', oz: 'weight', lb: 'weight',
-        ml: 'volume', l: 'volume', floz: 'volume', cup: 'volume', pt: 'volume', qt: 'volume', gal: 'volume',
-        each: 'count'
+        mg:"weight", g:"weight", kg:"weight", oz:"weight", lb:"weight",
+        ml:"volume", l:"volume", floz:"volume", cup:"volume", pt:"volume", qt:"volume", gal:"volume",
+        each:"count"
       };
 
       const COMPARE_OPTIONS = {
-        per_oz: { family: 'weight', base: 'oz', label: 'per oz' },
-        per_lb: { family: 'weight', base: 'lb', label: 'per lb' },
-        per_g: { family: 'weight', base: 'g', label: 'per g' },
-        per_floz: { family: 'volume', base: 'floz', label: 'per fl oz' },
-        per_l: { family: 'volume', base: 'l', label: 'per L' },
-        per_ml: { family: 'volume', base: 'ml', label: 'per mL' },
-        per_each: { family: 'count', base: 'each', label: 'each' }
+        per_oz:{family:"weight", base:"oz", label:"per oz"},
+        per_lb:{family:"weight", base:"lb", label:"per lb"},
+        per_g:{family:"weight", base:"g", label:"per g"},
+        per_floz:{family:"volume", base:"floz", label:"per fl oz"},
+        per_l:{family:"volume", base:"l", label:"per L"},
+        per_ml:{family:"volume", base:"ml", label:"per mL"},
+        per_each:{family:"count", base:"each", label:"each"}
       };
 
-      const tbody = document.getElementById('tbody');
-      const compareBy = document.getElementById('compareBy');
-      const mixWarn = document.getElementById('mixWarn');
+      const tbody = document.getElementById("tbody");
+      const compareBy = document.getElementById("compareBy");
+      const mixWarn = document.getElementById("mixWarn");
+      const STORAGE_KEY = "better-buy-v2-min";
 
       const state = { rows: [], idCounter: 0 };
-      const STORAGE_KEY = 'better-buy-v2';
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+      }
 
       function currency(n) {
-        if (Number.isNaN(n) || !Number.isFinite(n)) return '—';
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
-      }
-      function num(n, d = 3) {
-        if (Number.isNaN(n) || !Number.isFinite(n)) return '—';
-        return Number(n)
-          .toFixed(d)
-          .replace(/\.0+$/, '')
-          .replace(/(\.\d*?[1-9])0+$/, '$1');
+        if (!isFinite(n)) return "—";
+        return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n);
       }
 
-      function createRow(data = {}) {
-        const id = data.id ?? (++state.idCounter);
-        const tr = document.createElement('tr');
+      function createRow(data={}) {
+        const id = ++state.idCounter;
+        const tr = document.createElement("tr");
         tr.dataset.id = id;
 
         tr.innerHTML = `
-      <td><input aria-label="Item name" type="text" class="w" value="${esc(data.name || '')}" placeholder="e.g., Cereal A"/></td>
-      <td><input aria-label="Price" type="number" step="0.01" min="0" value="${esc(data.price ?? '')}"/></td>
-      <td><input aria-label="Pack count" type="number" step="1" min="1" value="${esc(data.pack ?? 1)}"/></td>
-      <td><input aria-label="Size" type="number" step="0.01" min="0" value="${esc(data.size ?? '')}"/></td>
-      <td>
-        <select aria-label="Unit">
-          ${unitOptions(data.unit || 'oz')}
-        </select>
-      </td>
-      <td><input aria-label="Row discount percent" type="number" step="0.1" min="0" max="100" value="${esc(data.disc ?? '')}"/></td>
-      <td class="num uprice">—</td>
-      <td class="row-actions">
-        <button class="ghost" title="Duplicate">⎘</button>
-        <button class="ghost" title="Delete">✕</button>
-      </td>
-    `;
+          <td><input type="text" value="${esc(data.name||"")}" placeholder="Item"></td>
+          <td><input type="number" step="0.01" value="${esc(data.price||"")}"></td>
+          <td><input type="number" step="1" value="${esc(data.pack||1)}"></td>
+          <td><input type="number" step="0.01" value="${esc(data.size||"")}"></td>
+          <td>
+            <select>
+              <optgroup label="Weight">
+                <option value="mg">mg</option>
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="oz" selected>oz</option>
+                <option value="lb">lb</option>
+              </optgroup>
+              <optgroup label="Volume">
+                <option value="ml">ml</option>
+                <option value="l">l</option>
+                <option value="floz">floz</option>
+                <option value="cup">cup</option>
+                <option value="pt">pt</option>
+                <option value="qt">qt</option>
+                <option value="gal">gal</option>
+              </optgroup>
+              <optgroup label="Count">
+                <option value="each">each</option>
+              </optgroup>
+            </select>
+          </td>
+          <td><input type="number" step="0.1" value="${esc(data.disc||"")}"></td>
+          <td class="uprice">—</td>
+          <td class="row-actions">
+            <button title="Duplicate">⎘</button>
+            <button title="Delete">✕</button>
+          </td>
+        `;
 
         tbody.appendChild(tr);
 
-        tr.querySelectorAll('input, select').forEach(el => {
-          el.addEventListener('input', onChange);
-          el.addEventListener('keydown', e => {
-            if (e.key === 'Enter') addRow();
-          });
-        });
+        tr.querySelectorAll("input, select").forEach(el =>
+          el.addEventListener("input", recalc)
+        );
 
-        tr.querySelectorAll('button')[0].addEventListener('click', () => duplicateRow(id));
-        tr.querySelectorAll('button')[1].addEventListener('click', () => deleteRow(id));
+        tr.querySelectorAll("button")[0].onclick = () => duplicateRow(id);
+        tr.querySelectorAll("button")[1].onclick = () => deleteRow(id);
 
         state.rows.push({ id, tr });
         recalc();
       }
 
-      function unitOptions(selected) {
-        const groups = [
-          { label: 'Weight', units: ['mg', 'g', 'kg', 'oz', 'lb'] },
-          { label: 'Volume', units: ['ml', 'l', 'floz', 'cup', 'pt', 'qt', 'gal'] },
-          { label: 'Count', units: ['each'] }
-        ];
-        return groups
-          .map(
-            g =>
-              `<optgroup label="${g.label}">` +
-              g.units
-                .map(u => `<option value="${u}" ${u === selected ? 'selected' : ''}>${u}</option>`)
-                .join('') +
-              `</optgroup>`
-          )
-          .join('');
-      }
-
       function getRowData(tr) {
-        const [nameEl, priceEl, packEl, sizeEl, unitEl, discEl, upriceEl] =
-          tr.querySelectorAll('input, select, .uprice');
+        const inputs = tr.querySelectorAll("input, select");
         return {
-          name: nameEl.value.trim(),
-          price: toNum(priceEl.value),
-          pack: toInt(packEl.value) || 1,
-          size: toNum(sizeEl.value),
-          unit: unitEl.value,
-          disc: toNum(discEl.value),
-          upriceEl,
+          name: inputs[0].value,
+          price: parseFloat(inputs[1].value),
+          pack: parseFloat(inputs[2].value) || 1,
+          size: parseFloat(inputs[3].value),
+          unit: inputs[4].value,
+          disc: parseFloat(inputs[5].value),
+          upriceEl: tr.querySelector(".uprice"),
           tr
         };
       }
-      function toNum(v) {
-        const n = parseFloat(v);
-        return Number.isFinite(n) ? n : NaN;
-      }
-      function toInt(v) {
-        const n = parseInt(v, 10);
-        return Number.isFinite(n) ? n : NaN;
+
+      function convertPer(perBase, fam, cmp) {
+        const base = FAMILIES[fam].base;
+        if (fam !== cmp.family) return perBase;
+
+        if (fam === "weight") {
+          if (cmp.base === "lb") return perBase * 16;
+          if (cmp.base === "g") return perBase / 0.03527396195;
+        }
+        if (fam === "volume") {
+          if (cmp.base === "l") return perBase / 0.0338140227;
+          if (cmp.base === "ml") return (perBase / 0.0338140227) / 1000;
+        }
+        return perBase;
       }
 
       function recalc() {
-        const rows = state.rows.map(r => getRowData(r.tr));
-
         const cmp = COMPARE_OPTIONS[compareBy.value];
+        const rows = state.rows.map(r => getRowData(r.tr));
+        const families = new Set();
 
-        let families = new Set();
-
-        // Compute unit prices
         rows.forEach(row => {
-          let { price, pack, size, unit, disc } = row;
-          if (!isFinite(price) || !isFinite(size) || !isFinite(pack) || pack <= 0 || size <= 0) {
-            row.unitPrice = NaN;
-            row.family = UNIT_FAMILY[unit];
-            return;
-          }
+          const { price, pack, size, unit, disc } = row;
           const fam = UNIT_FAMILY[unit];
           row.family = fam;
-          families.add(fam);
 
-          // Convert total size to compare base family base unit (not display yet)
-          const famMap = FAMILIES[fam];
-          const toBase = famMap ? famMap.map[unit] : NaN; // convert entered unit -> family base (oz/floz/each)
-          const totalBaseUnits = pack * size * (toBase || NaN);
+          if (!isFinite(price) || !isFinite(size) || size <= 0) {
+            row.unitPrice = NaN;
+            return;
+          }
 
+          const baseConv = FAMILIES[fam].map[unit];
+          const total = pack * size * baseConv;
           let eff = price;
-          const rowDisc = clamp(disc || 0, 0, 100);
-          if (rowDisc > 0) eff *= 1 - rowDisc / 100;
+          if (disc > 0 && disc <= 100) eff *= 1 - disc / 100;
 
-          const perBase = eff / totalBaseUnits; // price per (oz | fl oz | each)
-
-          // If compare mode asks for a different base (e.g., per lb), convert
+          const perBase = eff / total;
           row.unitPrice = convertPer(perBase, fam, cmp);
+          families.add(fam);
         });
 
-        // Mixed family warning (only if more than one non-empty family present)
-        const nonEmptyFamilies = new Set(rows.filter(r => isFinite(r.unitPrice)).map(r => r.family));
-        mixWarn.style.display = nonEmptyFamilies.size > 1 ? 'inline-block' : 'none';
+        mixWarn.style.display = families.size > 1 ? "inline-block" : "none";
 
-        // Determine best price among comparable rows
-        const comparable = rows.filter(
-          r => isFinite(r.unitPrice) && r.family === COMPARE_OPTIONS[compareBy.value].family
-        );
-        const best = comparable.length ? Math.min(...comparable.map(r => r.unitPrice)) : Infinity;
+        const sameFamRows = rows.filter(r => r.family === cmp.family && isFinite(r.unitPrice));
+        const best = sameFamRows.length ? Math.min(...sameFamRows.map(r => r.unitPrice)) : Infinity;
 
-        // Render
         rows.forEach(row => {
           const el = row.upriceEl;
           if (!isFinite(row.unitPrice)) {
-            el.textContent = '—';
-            el.className = 'num uprice';
-            row.tr.dataset.rank = '';
+            el.textContent = "—";
             return;
           }
           const isBest = Math.abs(row.unitPrice - best) < 1e-9;
-          el.textContent = `${currency(row.unitPrice)} ${COMPARE_OPTIONS[compareBy.value].label}`;
-          el.className = 'num uprice ' + (isBest ? 'good badge' : '');
-          row.tr.dataset.rank = row.unitPrice;
+          el.textContent = currency(row.unitPrice);
+          el.className = "uprice" + (isBest ? " good" : "");
         });
 
         save();
       }
 
-      function convertPer(perBase, fam, cmp) {
-        // perBase: price per family-base (oz | fl oz | each)
-        const base = FAMILIES[fam]?.base;
-        if (!base) return NaN;
-
-        // Convert from family-base to desired compare base
-        const want = cmp.base;
-        if (fam !== cmp.family) return perBase; // different family; display as calculated (will be flagged by mix)
-
-        if (base === want) return perBase; // already per oz / per fl oz / each
-
-        // Weight conversions for per-unit price
-        if (fam === 'weight') {
-          if (want === 'lb') return perBase * 16; // $/oz -> $/lb
-          if (want === 'g') return perBase / 0.03527396195; // $/oz -> $/g
-        }
-        if (fam === 'volume') {
-          if (want === 'l') return perBase / 0.0338140227018; // $/fl oz -> $/L
-          if (want === 'ml') return (perBase / 0.0338140227018) / 1000; // $/fl oz -> $/mL
-        }
-        // Count has only each
-        return perBase;
+      function duplicateRow(id) {
+        const r = state.rows.find(r => r.id === id);
+        const d = getRowData(r.tr);
+        createRow(d);
       }
 
-      function clamp(n, min, max) {
-        return Math.min(max, Math.max(min, n));
-      }
-      function esc(s) {
-        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-      }
-
-      function onChange() {
-        recalc();
-      }
-
-      function addRow(prefill = {}) {
-        createRow(prefill);
-        focusLastRow();
-      }
-      function focusLastRow() {
-        const last = tbody.lastElementChild;
-        if (!last) return;
-        const input = last.querySelector('input');
-        if (input) input.focus();
-      }
       function deleteRow(id) {
         const idx = state.rows.findIndex(r => r.id === id);
         if (idx >= 0) {
@@ -638,79 +387,48 @@
           recalc();
         }
       }
-      function duplicateRow(id) {
-        const row = state.rows.find(r => r.id === id);
-        if (!row) return;
-        const data = getRowData(row.tr);
-        addRow({
-          name: data.name,
-          price: data.price,
-          pack: data.pack,
-          size: data.size,
-          unit: data.unit,
-          disc: data.disc
-        });
-      }
-
-      function sortByBest() {
-        const rows = Array.from(tbody.children);
-        rows.sort((a, b) => {
-          const ra = parseFloat(a.dataset.rank ?? 'Infinity');
-          const rb = parseFloat(b.dataset.rank ?? 'Infinity');
-          return ra - rb;
-        });
-        rows.forEach(r => tbody.appendChild(r));
-      }
 
       function save() {
         const data = {
           compareBy: compareBy.value,
-          rows: state.rows.map(r => {
-            const d = getRowData(r.tr);
-            return {
-              name: d.name,
-              price: d.price,
-              pack: d.pack,
-              size: d.size,
-              unit: d.unit,
-              disc: d.disc
-            };
-          })
+          rows: state.rows.map(r => getRowData(r.tr))
         };
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {}
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
+
       function load() {
-        try {
-          const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-          if (!data) return;
-          compareBy.value = data.compareBy || 'per_oz';
-          (data.rows || []).forEach(r => addRow(r));
-        } catch (e) {}
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        if (!data) {
+          createRow();
+          createRow();
+          return;
+        }
+        compareBy.value = data.compareBy;
+        data.rows.forEach(r => createRow(r));
       }
 
-      function clearAll() {
-        state.rows.forEach(r => r.tr.remove());
-        state.rows = [];
-        recalc();
-        save();
-      }
+      document.getElementById("addRow").onclick = () => createRow();
+      document.getElementById("sortAsc").onclick = () => {
+        const rows = Array.from(tbody.children);
+        rows.sort((a,b) =>
+          parseFloat(a.querySelector(".uprice").textContent.replace(/[^0-9.]/g,"")) -
+          parseFloat(b.querySelector(".uprice").textContent.replace(/[^0-9.]/g,""))
+        );
+        rows.forEach(r => tbody.appendChild(r));
+      };
 
-      // --- Events ---
-      document.getElementById('addRow').addEventListener('click', () => addRow());
-      document.getElementById('sortAsc').addEventListener('click', sortByBest);
-      document.getElementById('clearAll').addEventListener('click', () => {
-        if (confirm('Clear all items?')) clearAll();
-      });
-      compareBy.addEventListener('change', recalc);
+      document.getElementById("clearAll").onclick = () => {
+        if (confirm("Clear all rows?")) {
+          tbody.innerHTML = "";
+          state.rows = [];
+          createRow();
+          recalc();
+        }
+      };
 
-      // --- Init ---
+      compareBy.onchange = recalc;
+
       load();
-      if (state.rows.length === 0) {
-        addRow({ name: 'Cereal A', price: 3.99, pack: 1, size: 18, unit: 'oz' });
-        addRow({ name: 'Cereal B', price: 5.49, pack: 1, size: 24, unit: 'oz' });
-      }
     })();
   </script>
 </body>
