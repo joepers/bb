@@ -341,19 +341,9 @@
             </optgroup>
           </select>
         </label>
-        <label title="Apply % discount to all items (e.g., storewide coupon)">
-          Global discount %
-          <input id="globalDiscount" type="number" min="0" max="100" step="0.1" placeholder="0" />
-        </label>
-        <label title="Sales tax % to include in final price (leave blank to exclude)">
-          Tax %
-          <input id="taxPct" type="number" min="0" max="50" step="0.1" placeholder="0" />
-        </label>
         <button id="addRow" class="primary" title="Add a new item (or press Enter from last field)">+ Add item</button>
         <button id="sortAsc" title="Sort by best (lowest) unit price">Sort by best</button>
         <button id="clearAll" class="ghost" title="Clear the table">Clear</button>
-        <button id="exportBtn" class="ghost" title="Export your list to a file">Export</button>
-        <button id="importBtn" class="ghost" title="Import a list from a file">Import</button>
       </div>
     </header>
 
@@ -361,14 +351,13 @@
       <table>
         <thead>
           <tr>
-            <th style="width:18%">Item</th>
-            <th style="width:11%">Price ($)</th>
+            <th style="width:20%">Item</th>
+            <th style="width:12%">Price ($)</th>
             <th style="width:9%" title="Pack count multiplies size (e.g., 12-pack)">Pack</th>
-            <th style="width:12%">Size</th>
-            <th style="width:12%">Unit</th>
-            <th style="width:11%" title="Optional extra discount on this specific item">Disc. %</th>
-            <th style="width:15%">Unit price</th>
-            <th style="width:8%">Notes</th>
+            <th style="width:13%">Size</th>
+            <th style="width:13%">Unit</th>
+            <th style="width:12%" title="Optional extra discount on this specific item">Disc. %</th>
+            <th style="width:17%">Unit price</th>
             <th style="width:4%"></th>
           </tr>
         </thead>
@@ -387,10 +376,9 @@
       <summary>How to use + examples</summary>
       <ul>
         <li><strong>Add items</strong> with price, pack (optional), size, and unit. E.g., Cereal A: $3.99, 18 oz → Unit price shows per your <em>Compare by</em> setting.</li>
-        <li><strong>Global discount</strong> applies to all items (e.g., 10% off day). Add <strong>Tax %</strong> to include tax in the unit price.</li>
         <li><strong>Disc. %</strong> per row handles coupons or manager specials on that item.</li>
         <li><strong>Sort by best</strong> to bring the lowest unit price to the top. The best price is highlighted.</li>
-        <li>Everything saves automatically in your browser (no internet needed). Use <strong>Export/Import</strong> to move lists between devices.</li>
+        <li>Everything saves automatically in your browser (no internet needed).</li>
       </ul>
       <p class="sub">
         Supported units: <em>Weight</em> – mg, g, kg, oz, lb. <em>Volume</em> – ml, l, floz, cup, pt, qt, gal. <em>Count</em> – each.
@@ -401,8 +389,6 @@
       Made with ♥ to help you make the better buy. – <span class="badge">No tracking. 100% offline.</span>
     </footer>
   </div>
-
-  <input id="filePicker" type="file" accept="application/json" style="display:none" />
 
   <script>
     (function () {
@@ -440,10 +426,7 @@
 
       const tbody = document.getElementById('tbody');
       const compareBy = document.getElementById('compareBy');
-      const globalDiscount = document.getElementById('globalDiscount');
-      const taxPct = document.getElementById('taxPct');
       const mixWarn = document.getElementById('mixWarn');
-      const filePicker = document.getElementById('filePicker');
 
       const state = { rows: [], idCounter: 0 };
       const STORAGE_KEY = 'better-buy-v2';
@@ -477,7 +460,6 @@
       </td>
       <td><input aria-label="Row discount percent" type="number" step="0.1" min="0" max="100" value="${esc(data.disc ?? '')}"/></td>
       <td class="num uprice">—</td>
-      <td><input aria-label="Notes" type="text" value="${esc(data.note || '')}" placeholder="optional"/></td>
       <td class="row-actions">
         <button class="ghost" title="Duplicate">⎘</button>
         <button class="ghost" title="Delete">✕</button>
@@ -519,7 +501,7 @@
       }
 
       function getRowData(tr) {
-        const [nameEl, priceEl, packEl, sizeEl, unitEl, discEl, upriceEl, noteEl] =
+        const [nameEl, priceEl, packEl, sizeEl, unitEl, discEl, upriceEl] =
           tr.querySelectorAll('input, select, .uprice');
         return {
           name: nameEl.value.trim(),
@@ -529,7 +511,6 @@
           unit: unitEl.value,
           disc: toNum(discEl.value),
           upriceEl,
-          note: noteEl.value.trim(),
           tr
         };
       }
@@ -546,8 +527,6 @@
         const rows = state.rows.map(r => getRowData(r.tr));
 
         const cmp = COMPARE_OPTIONS[compareBy.value];
-        const gdisc = clamp(toNum(globalDiscount.value), 0, 100) || 0;
-        const tax = Math.max(0, toNum(taxPct.value) || 0) / 100;
 
         let families = new Set();
 
@@ -570,9 +549,7 @@
 
           let eff = price;
           const rowDisc = clamp(disc || 0, 0, 100);
-          if (gdisc > 0) eff *= 1 - gdisc / 100;
           if (rowDisc > 0) eff *= 1 - rowDisc / 100;
-          if (tax > 0) eff *= 1 + tax;
 
           const perBase = eff / totalBaseUnits; // price per (oz | fl oz | each)
 
@@ -671,8 +648,7 @@
           pack: data.pack,
           size: data.size,
           unit: data.unit,
-          disc: data.disc,
-          note: data.note
+          disc: data.disc
         });
       }
 
@@ -689,8 +665,6 @@
       function save() {
         const data = {
           compareBy: compareBy.value,
-          globalDiscount: globalDiscount.value,
-          taxPct: taxPct.value,
           rows: state.rows.map(r => {
             const d = getRowData(r.tr);
             return {
@@ -699,8 +673,7 @@
               pack: d.pack,
               size: d.size,
               unit: d.unit,
-              disc: d.disc,
-              note: d.note
+              disc: d.disc
             };
           })
         };
@@ -713,8 +686,6 @@
           const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
           if (!data) return;
           compareBy.value = data.compareBy || 'per_oz';
-          globalDiscount.value = data.globalDiscount || '';
-          taxPct.value = data.taxPct || '';
           (data.rows || []).forEach(r => addRow(r));
         } catch (e) {}
       }
@@ -726,52 +697,13 @@
         save();
       }
 
-      // --- Export / Import ---
-      function exportData() {
-        const payload = localStorage.getItem(STORAGE_KEY) || JSON.stringify({});
-        const blob = new Blob([payload], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'better-buy-list.json';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
-      function importData() {
-        filePicker.click();
-      }
-      filePicker.addEventListener('change', e => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            const data = JSON.parse(reader.result);
-            clearAll();
-            compareBy.value = data.compareBy || 'per_oz';
-            globalDiscount.value = data.globalDiscount || '';
-            taxPct.value = data.taxPct || '';
-            (data.rows || []).forEach(r => addRow(r));
-            recalc();
-          } catch (err) {
-            alert('Invalid file.');
-          }
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-      });
-
       // --- Events ---
       document.getElementById('addRow').addEventListener('click', () => addRow());
       document.getElementById('sortAsc').addEventListener('click', sortByBest);
       document.getElementById('clearAll').addEventListener('click', () => {
         if (confirm('Clear all items?')) clearAll();
       });
-      document.getElementById('exportBtn').addEventListener('click', exportData);
-      document.getElementById('importBtn').addEventListener('click', importData);
       compareBy.addEventListener('change', recalc);
-      globalDiscount.addEventListener('input', recalc);
-      taxPct.addEventListener('input', recalc);
 
       // --- Init ---
       load();
