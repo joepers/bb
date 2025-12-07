@@ -1,890 +1,418 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Better Buy – Unit Cost Comparator</title>
-  <meta name="description" content="A single-file web app to compare grocery unit prices and spot the better buy." />
-  <style>
-    /* ------------------------------------------------------------------
-       THEME SYSTEM
-       - We use CSS variables + body[data-theme="..."] overrides.
-       - JS toggles data-theme on <body> and saves to localStorage.
-       ------------------------------------------------------------------ */
-
-    :root {
-      /* Base / fallback values (overridden by themes) */
-      --bg: #f4f5f7;
-      --card: #ffffff;
-      --muted: #6b7280;
-      --text: #111827;
-      --accent: #2563eb;
-      --accent-soft: #e0edff;
-      --danger: #dc2626;
-      --warning: #f97316;
-      --ring: #d1d5db;
-      --border: #e5e7eb;
-
-      --header-bg: transparent;
-      --header-text: var(--text);
-      --header-sub: var(--muted);
-    }
-
-    /* Default / initial theme: Color Pop */
-    body[data-theme="color-pop"] {
-      --bg: #fdfbff;
-      --card: #ffffff;
-      --muted: #6b6a7f;
-      --text: #14121c;
-      --accent: #ff4d8d;
-      --accent-soft: #ffe3f1;
-      --danger: #ff4b6a;
-      --warning: #ff9f1c;
-      --ring: #f5b4ff;
-      --border: #f2d8ff;
-
-      --header-bg: linear-gradient(120deg, #ff4d8d, #7b5cff, #00c6b8);
-      --header-text: #ffffff;
-      --header-sub: #fdf2ff;
-    }
-
-    /* Fresh Green – organic / farmer’s market vibe */
-    body[data-theme="fresh-green"] {
-      --bg: #f5fbf7;
-      --card: #ffffff;
-      --muted: #5b6a5f;
-      --text: #123024;
-      --accent: #22c55e;
-      --accent-soft: #dcfce7;
-      --danger: #b91c1c;
-      --warning: #f97316;
-      --ring: #a7f3d0;
-      --border: #d1fae5;
-
-      --header-bg: linear-gradient(135deg, #16a34a, #22c55e, #14b8a6);
-      --header-text: #f0fdf4;
-      --header-sub: #e0fbea;
-    }
-
-    /* Value Orange – discount / “deal hunter” feel */
-    body[data-theme="value-orange"] {
-      --bg: #fffaf3;
-      --card: #ffffff;
-      --muted: #7c5a3a;
-      --text: #3b1f0a;
-      --accent: #f97316;
-      --accent-soft: #ffedd5;
-      --danger: #dc2626;
-      --warning: #facc15;
-      --ring: #fed7aa;
-      --border: #fed7aa;
-
-      --header-bg: radial-gradient(circle at top left, #f97316, #ea580c, #facc15);
-      --header-text: #fffbeb;
-      --header-sub: #fef3c7;
-    }
-
-    /* Midnight Premium – dark mode / upscale */
-    body[data-theme="midnight-premium"] {
-      --bg: #020617;
-      --card: #0b1220;
-      --muted: #9ca3ff;
-      --text: #e5e7eb;
-      --accent: #eab308;
-      --accent-soft: #422006;
-      --danger: #f87171;
-      --warning: #facc15;
-      --ring: #4b5563;
-      --border: #1f2937;
-
-      --header-bg: linear-gradient(135deg, #020617, #111827, #4b5563);
-      --header-text: #f9fafb;
-      --header-sub: #e5e7eb;
-    }
-
-    html, body { height: 100%; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans",
-        "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--text);
-      background: var(--bg);
-      transition: background 0.25s ease, color 0.25s ease;
-    }
-
-    .wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px 16px 32px;
-    }
-
-    header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 18px;
-      padding: 18px 18px 20px;
-      border-radius: 18px;
-      background: var(--header-bg);
-      color: var(--header-text);
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .brand {
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      font-size: clamp(22px, 3vw, 30px);
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-
-    .brand .dot {
-      width: 10px;
-      height: 10px;
-      background: var(--accent);
-      border-radius: 999px;
-      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.3);
-    }
-
-    .sub {
-      color: var(--header-sub);
-      font-size: 13px;
-    }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-end;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
-    }
-
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    select,
-    input[type="text"],
-    input[type="number"],
-    textarea {
-      background: #ffffff;
-      border: 1px solid var(--ring);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 8px 10px;
-      outline: none;
-      font-size: 14px;
-      transition:
-        border-color 0.15s ease,
-        box-shadow 0.15s ease,
-        background 0.15s ease;
-    }
-
-    body[data-theme="midnight-premium"] select,
-    body[data-theme="midnight-premium"] input[type="text"],
-    body[data-theme="midnight-premium"] input[type="number"],
-    body[data-theme="midnight-premium"] textarea {
-      background: #020617;
-      color: var(--text);
-    }
-
-    select:focus,
-    input:focus,
-    textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-    }
-
-    button {
-      border: 1px solid transparent;
-      background: #ffffff;
-      color: var(--text);
-      padding: 9px 13px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.1s ease,
-        box-shadow 0.15s ease;
-    }
-
-    button:hover {
-      background: #f3f4f6;
-      border-color: #cbd5f5;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
-    }
-
-    .primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #ffffff;
-      font-weight: 600;
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
-    }
-
-    .primary:hover {
-      background: #1d4ed8;
-      border-color: #1d4ed8;
-    }
-
-    .ghost {
-      background: transparent;
-      border-color: var(--ring);
-    }
-
-    /* Theme selector button style (we reuse base button + label) */
-    #themeSelect {
-      min-width: 140px;
-    }
-
-    /* Shrink Item, Price, Pack, Size by 50% */
-    td:nth-child(1) input,
-    td:nth-child(2) input,
-    td:nth-child(3) input,
-    td:nth-child(4) input {
-      width: 50%;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    th,
-    td {
-      text-align: left;
-      padding: 10px 8px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    tbody tr {
-      transition: background 0.15s ease;
-    }
-
-    tbody tr:hover {
-      background: #f9fafb;
-    }
-
-    body[data-theme="midnight-premium"] tbody tr:hover {
-      background: #020617;
-    }
-
-    .badge {
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      border: 1px solid #d0e0ff;
-      color: var(--accent);
-      background: var(--accent-soft);
-      font-weight: 500;
-    }
-
-    .good {
-      background: #dcfce7;
-      color: #166534;
-      border-color: #86efac;
-    }
-
-    body[data-theme="midnight-premium"] .good {
-      background: #14532d;
-      color: #bbf7d0;
-      border-color: #22c55e;
-    }
-
-    .warn {
-      background: #fef3c7;
-      color: #92400e;
-      border-color: #fbbf24;
-    }
-
-    .row-actions {
-      display: flex;
-      gap: 4px;
-      justify-content: flex-end;
-    }
-
-    .num {
-      font-variant-numeric: tabular-nums;
-    }
-
-    .foot {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    details.how {
-      margin: 14px 0 8px;
-    }
-
-    details.how[open] summary {
-      color: var(--accent);
-    }
-
-    summary {
-      cursor: pointer;
-      user-select: none;
-      list-style: none;
-      font-weight: 500;
-      font-size: 14px;
-    }
-
-    summary::-webkit-details-marker {
-      display: none;
-    }
-
-    summary::before {
-      content: "▸";
-      display: inline-block;
-      margin-right: 6px;
-      transition: transform 0.15s ease;
-      color: var(--muted);
-    }
-
-    details[open] summary::before {
-      transform: rotate(90deg);
-    }
-
-    .grid {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(12, 1fr);
-    }
-
-    .col-12 {
-      grid-column: span 12;
-    }
-
-    .col-6 {
-      grid-column: span 6;
-    }
-
-    .col-4 {
-      grid-column: span 4;
-    }
-
-    .col-3 {
-      grid-column: span 3;
-    }
-
-    @media (max-width: 840px) {
-      .col-6,
-      .col-4,
-      .col-3 {
-        grid-column: span 12;
-      }
-
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .controls {
-        width: 100%;
-      }
-    }
-
-    .strike {
-      text-decoration: line-through;
-      color: #9ca3af;
-    }
-
-    .link {
-      color: #2563eb;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    footer.sub {
-      margin-top: 10px;
-      color: var(--muted);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose the Better Buy and WIN the grocery game !</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .unit-price {
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .best-value {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .add-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 6px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .winner-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
 </head>
-<body data-theme="color-pop">
-  <div class="wrap">
-    <header>
-      <div class="logo">
-        <div class="dot" aria-hidden="true"></div>
-        <div>
-          <div class="brand">
-            Choose the Better Buy and WIN the grocery game !
-          </div>
-          <div class="sub">
-            Compare groceries by <span class="badge">unit price</span> – quickly see the best value.
-          </div>
+<body>
+    <div class="container">
+        <h1>🛒 Choose the Better Buy and WIN the grocery game ! 🏆</h1>
+        <p class="subtitle">Compare products by unit price to find the best value</p>
+        
+        <div class="table-container">
+            <table id="productTable">
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">Product Name</th>
+                        <th style="width: 100px;">Price ($)</th>
+                        <th style="width: 80px;">Packs</th>
+                        <th style="width: 100px;">Size</th>
+                        <th style="width: 120px;">Unit Type</th>
+                        <th style="width: 150px;">Unit Price</th>
+                        <th style="width: 60px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="productBody">
+                    <tr data-row="0">
+                        <td><input type="text" placeholder="e.g., Brand A Cereal" oninput="calculate()"></td>
+                        <td><input type="number" step="0.01" min="0" placeholder="0.00" oninput="calculate()"></td>
+                        <td><input type="number" step="1" min="1" value="1" oninput="calculate()"></td>
+                        <td><input type="number" step="0.01" min="0" placeholder="0" oninput="calculate()"></td>
+                        <td>
+                            <select onchange="calculate()">
+                                <option value="">Select unit</option>
+                                <optgroup label="Weight">
+                                    <option value="oz">Ounces (oz)</option>
+                                    <option value="lb">Pounds (lb)</option>
+                                    <option value="g">Grams (g)</option>
+                                    <option value="kg">Kilograms (kg)</option>
+                                </optgroup>
+                                <optgroup label="Volume">
+                                    <option value="fl oz">Fluid Ounces (fl oz)</option>
+                                    <option value="cup">Cups</option>
+                                    <option value="pt">Pints (pt)</option>
+                                    <option value="qt">Quarts (qt)</option>
+                                    <option value="gal">Gallons (gal)</option>
+                                    <option value="ml">Milliliters (ml)</option>
+                                    <option value="l">Liters (l)</option>
+                                </optgroup>
+                                <optgroup label="Count">
+                                    <option value="ct">Count (ct)</option>
+                                </optgroup>
+                            </select>
+                        </td>
+                        <td class="unit-price">-</td>
+                        <td><button class="remove-btn" onclick="removeRow(0)">Remove</button></td>
+                    </tr>
+                    <tr data-row="1">
+                        <td><input type="text" placeholder="e.g., Brand B Cereal" oninput="calculate()"></td>
+                        <td><input type="number" step="0.01" min="0" placeholder="0.00" oninput="calculate()"></td>
+                        <td><input type="number" step="1" min="1" value="1" oninput="calculate()"></td>
+                        <td><input type="number" step="0.01" min="0" placeholder="0" oninput="calculate()"></td>
+                        <td>
+                            <select onchange="calculate()">
+                                <option value="">Select unit</option>
+                                <optgroup label="Weight">
+                                    <option value="oz">Ounces (oz)</option>
+                                    <option value="lb">Pounds (lb)</option>
+                                    <option value="g">Grams (g)</option>
+                                    <option value="kg">Kilograms (kg)</option>
+                                </optgroup>
+                                <optgroup label="Volume">
+                                    <option value="fl oz">Fluid Ounces (fl oz)</option>
+                                    <option value="cup">Cups</option>
+                                    <option value="pt">Pints (pt)</option>
+                                    <option value="qt">Quarts (qt)</option>
+                                    <option value="gal">Gallons (gal)</option>
+                                    <option value="ml">Milliliters (ml)</option>
+                                    <option value="l">Liters (l)</option>
+                                </optgroup>
+                                <optgroup label="Count">
+                                    <option value="ct">Count (ct)</option>
+                                </optgroup>
+                            </select>
+                        </td>
+                        <td class="unit-price">-</td>
+                        <td><button class="remove-btn" onclick="removeRow(1)">Remove</button></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-      </div>
-      <div class="controls card" role="region" aria-label="Controls">
-        <label>
-          Theme
-          <select id="themeSelect">
-            <option value="color-pop">Color Pop</option>
-            <option value="fresh-green">Fresh Green</option>
-            <option value="value-orange">Value Orange</option>
-            <option value="midnight-premium">Midnight Premium</option>
-          </select>
-        </label>
-        <label>
-          Compare by
-          <select id="compareBy">
-            <optgroup label="Weight">
-              <option value="per_oz">per ounce (oz)</option>
-              <option value="per_lb">per pound (lb)</option>
-              <option value="per_g">per gram (g)</option>
-            </optgroup>
-            <optgroup label="Volume">
-              <option value="per_floz">per fluid ounce (fl oz)</option>
-              <option value="per_l">per liter (L)</option>
-              <option value="per_ml">per milliliter (mL)</option>
-            </optgroup>
-            <optgroup label="Count">
-              <option value="per_each">per each</option>
-            </optgroup>
-          </select>
-        </label>
-        <button id="addRow" class="primary" title="Add a new item (or press Enter from last field)">+ Add item</button>
-<!--        <button id="sortAsc" title="Sort by best (lowest) unit price">Sort by best</button>
-        <button id="clearAll" class="ghost" title="Clear the table">Clear</button>
--->      </div>
-    </header>
-
-    <section class="card" aria-live="polite">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:20%">Item</th>
-            <th style="width:12%">Price ($)</th>
-            <th style="width:9%" title="Pack count multiplies size (e.g., 12-pack)">Pack</th>
-            <th style="width:13%">Size</th>
-            <th style="width:13%">Unit</th>
-            <th style="width:12%" title="Optional extra discount on this specific item">Disc. %</th>
-            <th style="width:17%">Unit price</th>
-            <th style="width:4%"></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div class="foot">
-        <div>
-          <span class="badge">Tip</span>
-          Use the same unit family (weight / volume / count) for true apples-to-apples. Mixed families are flagged.
+        
+        <button class="add-btn" onclick="addRow()">➕ Add Another Product</button>
+        
+        <div class="info-box">
+            <h3>💡 How to use:</h3>
+            <p><strong>1.</strong> Enter the product name, price, number of packs, size per pack, and unit type</p>
+            <p><strong>2.</strong> The calculator automatically converts to a common unit within each family (weight, volume, or count)</p>
+            <p><strong>3.</strong> The best value is highlighted in green with a pulsing animation</p>
+            <p><strong>4.</strong> Add more products to compare by clicking "Add Another Product"</p>
         </div>
-        <div id="mixWarn" class="warn badge" style="display:none">Mixed unit families detected</div>
-      </div>
-    </section>
+    </div>
 
-    <details class="how card">
-      <summary>How to use + examples</summary>
-      <ul>
-        <li><strong>Add items</strong> with price, pack (optional), size, and unit. E.g., Cereal A: $3.99, 18 oz → Unit price shows per your <em>Compare by</em> setting.</li>
-        <li><strong>Disc. %</strong> per row handles coupons or manager specials on that item.</li>
-        <li><strong>Sort by best</strong> to bring the lowest unit price to the top. The best price is highlighted.</li>
-        <li>Everything saves automatically in your browser (no internet needed).</li>
-      </ul>
-      <p class="sub">
-        Supported units: <em>Weight</em> – mg, g, kg, oz, lb. <em>Volume</em> – ml, l, floz, cup, pt, qt, gal. <em>Count</em> – each.
-      </p>
-    </details>
-
-    <footer class="sub" style="margin-top: 10px;">
-      <span class="badge">No tracking. 100% offline.</span>
-    </footer>
-  </div>
-
-  <script>
-    (function () {
-      // --- Theme handling ---
-      const themeSelect = document.getElementById('themeSelect');
-      const THEME_KEY = 'better-buy-theme';
-      const DEFAULT_THEME = 'color-pop';
-      const ALLOWED_THEMES = ['color-pop', 'fresh-green', 'value-orange', 'midnight-premium'];
-
-      function applyTheme(theme) {
-        const t = ALLOWED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
-        document.body.setAttribute('data-theme', t);
-        if (themeSelect) themeSelect.value = t;
-        try {
-          localStorage.setItem(THEME_KEY, t);
-        } catch (e) {}
-      }
-
-      function loadTheme() {
-        let stored = DEFAULT_THEME;
-        try {
-          stored = localStorage.getItem(THEME_KEY) || DEFAULT_THEME;
-        } catch (e) {}
-        applyTheme(stored);
-      }
-
-      if (themeSelect) {
-        themeSelect.addEventListener('change', () => {
-          applyTheme(themeSelect.value);
-        });
-      }
-
-      loadTheme();
-
-      // --- Unit conversion maps ---
-      const FAMILIES = {
-        weight: {
-          base: 'oz',
-          map: { mg: 1 / 28349.523125, g: 1 / 28.349523125, kg: 35.27396195, oz: 1, lb: 16 }
-        },
-        volume: {
-          base: 'floz',
-          map: { ml: 1 / 29.5735295625, l: 33.8140227018, floz: 1, cup: 8, pt: 16, qt: 32, gal: 128 }
-        },
-        count: {
-          base: 'each',
-          map: { each: 1 }
-        }
-      };
-
-      const UNIT_FAMILY = {
-        mg: 'weight', g: 'weight', kg: 'weight', oz: 'weight', lb: 'weight',
-        ml: 'volume', l: 'volume', floz: 'volume', cup: 'volume', pt: 'volume', qt: 'volume', gal: 'volume',
-        each: 'count'
-      };
-
-      const COMPARE_OPTIONS = {
-        per_oz: { family: 'weight', base: 'oz', label: 'per oz' },
-        per_lb: { family: 'weight', base: 'lb', label: 'per lb' },
-        per_g: { family: 'weight', base: 'g', label: 'per g' },
-        per_floz: { family: 'volume', base: 'floz', label: 'per fl oz' },
-        per_l: { family: 'volume', base: 'l', label: 'per L' },
-        per_ml: { family: 'volume', base: 'ml', label: 'per mL' },
-        per_each: { family: 'count', base: 'each', label: 'each' }
-      };
-
-      const tbody = document.getElementById('tbody');
-      const compareBy = document.getElementById('compareBy');
-      const mixWarn = document.getElementById('mixWarn');
-
-      const state = { rows: [], idCounter: 0 };
-      const STORAGE_KEY = 'better-buy-v2';
-
-      function currency(n) {
-        if (Number.isNaN(n) || !Number.isFinite(n)) return '—';
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
-      }
-      function num(n, d = 3) {
-        if (Number.isNaN(n) || !Number.isFinite(n)) return '—';
-        return Number(n)
-          .toFixed(d)
-          .replace(/\.0+$/, '')
-          .replace(/(\.\d*?[1-9])0+$/, '$1');
-      }
-
-      function createRow(data = {}) {
-        const id = data.id ?? (++state.idCounter);
-        const tr = document.createElement('tr');
-        tr.dataset.id = id;
-
-        tr.innerHTML = `
-      <td><input aria-label="Item name" type="text" class="w" value="${esc(data.name || '')}" placeholder="e.g., Cereal A"/></td>
-      <td><input aria-label="Price" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(data.price ?? '')}"/></td>
-      <td><input aria-label="Pack count" type="number" inputmode="decimal" step="1" min="1" value="${esc(data.pack ?? 1)}"/></td>
-      <td><input aria-label="Size" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(data.size ?? '')}"/></td>
-      <td>
-        <select aria-label="Unit">
-          ${unitOptions(data.unit || 'oz')}
-        </select>
-      </td>
-      <td><input aria-label="Row discount percent" type="number" inputmode="decimal" step="0.1" min="0" max="100" value="${esc(data.disc ?? '')}"/></td>
-      <td class="num uprice">—</td>
-      <td class="row-actions">
-        <button class="ghost" title="Duplicate">⎘</button>
-        <button class="ghost" title="Delete">✕</button>
-      </td>
-    `;
-
-        tbody.appendChild(tr);
-
-        tr.querySelectorAll('input, select').forEach(el => {
-          el.addEventListener('input', onChange);
-          el.addEventListener('keydown', e => {
-            if (e.key === 'Enter') addRow();
-          });
-        });
-
-        tr.querySelectorAll('button')[0].addEventListener('click', () => duplicateRow(id));
-        tr.querySelectorAll('button')[1].addEventListener('click', () => deleteRow(id));
-
-        state.rows.push({ id, tr });
-        recalc();
-      }
-
-      function unitOptions(selected) {
-        const groups = [
-          { label: 'Weight', units: ['mg', 'g', 'kg', 'oz', 'lb'] },
-          { label: 'Volume', units: ['ml', 'l', 'floz', 'cup', 'pt', 'qt', 'gal'] },
-          { label: 'Count', units: ['each'] }
-        ];
-        return groups
-          .map(
-            g =>
-              `<optgroup label="${g.label}">` +
-              g.units
-                .map(u => `<option value="${u}" ${u === selected ? 'selected' : ''}>${u}</option>`)
-                .join('') +
-              `</optgroup>`
-          )
-          .join('');
-      }
-
-      function getRowData(tr) {
-        const [nameEl, priceEl, packEl, sizeEl, unitEl, discEl, upriceEl] =
-          tr.querySelectorAll('input, select, .uprice');
-        return {
-          name: nameEl.value.trim(),
-          price: toNum(priceEl.value),
-          pack: toInt(packEl.value) || 1,
-          size: toNum(sizeEl.value),
-          unit: unitEl.value,
-          disc: toNum(discEl.value),
-          upriceEl,
-          tr
+    <script>
+        let rowCounter = 2;
+        
+        // Conversion factors to base units (oz for weight, fl oz for volume)
+        const conversions = {
+            // Weight to ounces
+            'oz': 1,
+            'lb': 16,
+            'g': 0.035274,
+            'kg': 35.274,
+            // Volume to fluid ounces
+            'fl oz': 1,
+            'cup': 8,
+            'pt': 16,
+            'qt': 32,
+            'gal': 128,
+            'ml': 0.033814,
+            'l': 33.814,
+            // Count
+            'ct': 1
         };
-      }
-      function toNum(v) {
-        const n = parseFloat(v);
-        return Number.isFinite(n) ? n : NaN;
-      }
-      function toInt(v) {
-        const n = parseInt(v, 10);
-        return Number.isFinite(n) ? n : NaN;
-      }
-
-      function recalc() {
-        const rows = state.rows.map(r => getRowData(r.tr));
-
-        const cmp = COMPARE_OPTIONS[compareBy.value];
-
-        let families = new Set();
-
-        // Compute unit prices
-        rows.forEach(row => {
-          let { price, pack, size, unit, disc } = row;
-          if (!isFinite(price) || !isFinite(size) || !isFinite(pack) || pack <= 0 || size <= 0) {
-            row.unitPrice = NaN;
-            row.family = UNIT_FAMILY[unit];
-            return;
-          }
-          const fam = UNIT_FAMILY[unit];
-          row.family = fam;
-          families.add(fam);
-
-          // Convert total size to compare base family base unit (not display yet)
-          const famMap = FAMILIES[fam];
-          const toBase = famMap ? famMap.map[unit] : NaN; // convert entered unit -> family base (oz/floz/each)
-          const totalBaseUnits = pack * size * (toBase || NaN);
-
-          let eff = price;
-          const rowDisc = clamp(disc || 0, 0, 100);
-          if (rowDisc > 0) eff *= 1 - rowDisc / 100;
-
-          const perBase = eff / totalBaseUnits; // price per (oz | fl oz | each)
-
-          // If compare mode asks for a different base (e.g., per lb), convert
-          row.unitPrice = convertPer(perBase, fam, cmp);
-        });
-
-        // Mixed family warning (only if more than one non-empty family present)
-        const nonEmptyFamilies = new Set(rows.filter(r => isFinite(r.unitPrice)).map(r => r.family));
-        mixWarn.style.display = nonEmptyFamilies.size > 1 ? 'inline-block' : 'none';
-
-        // Determine best price among comparable rows
-        const comparable = rows.filter(
-          r => isFinite(r.unitPrice) && r.family === COMPARE_OPTIONS[compareBy.value].family
-        );
-        const best = comparable.length ? Math.min(...comparable.map(r => r.unitPrice)) : Infinity;
-
-        // Render
-        rows.forEach(row => {
-          const el = row.upriceEl;
-          if (!isFinite(row.unitPrice)) {
-            el.textContent = '—';
-            el.className = 'num uprice';
-            row.tr.dataset.rank = '';
-            return;
-          }
-          const isBest = Math.abs(row.unitPrice - best) < 1e-9;
-          el.textContent = `${currency(row.unitPrice)} ${COMPARE_OPTIONS[compareBy.value].label}`;
-          el.className = 'num uprice ' + (isBest ? 'good badge' : '');
-          row.tr.dataset.rank = row.unitPrice;
-        });
-
-        save();
-      }
-
-      function convertPer(perBase, fam, cmp) {
-        // perBase: price per family-base (oz | fl oz | each)
-        const base = FAMILIES[fam]?.base;
-        if (!base) return NaN;
-
-        // Convert from family-base to desired compare base
-        const want = cmp.base;
-        if (fam !== cmp.family) return perBase; // different family; display as calculated (will be flagged by mix)
-
-        if (base === want) return perBase; // already per oz / per fl oz / each
-
-        // Weight conversions for per-unit price
-        if (fam === 'weight') {
-          if (want === 'lb') return perBase * 16; // $/oz -> $/lb
-          if (want === 'g') return perBase / 0.03527396195; // $/oz -> $/g
-        }
-        if (fam === 'volume') {
-          if (want === 'l') return perBase / 0.0338140227018; // $/fl oz -> $/L
-          if (want === 'ml') return (perBase / 0.0338140227018) / 1000; // $/fl oz -> $/mL
-        }
-        // Count has only each
-        return perBase;
-      }
-
-      function clamp(n, min, max) {
-        return Math.min(max, Math.max(min, n));
-      }
-      function esc(s) {
-        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-      }
-
-      function onChange() {
-        recalc();
-      }
-
-      function addRow(prefill = {}) {
-        createRow(prefill);
-        focusLastRow();
-      }
-      function focusLastRow() {
-        const last = tbody.lastElementChild;
-        if (!last) return;
-        const input = last.querySelector('input');
-        if (input) input.focus();
-      }
-      function deleteRow(id) {
-        const idx = state.rows.findIndex(r => r.id === id);
-        if (idx >= 0) {
-          tbody.removeChild(state.rows[idx].tr);
-          state.rows.splice(idx, 1);
-          recalc();
-        }
-      }
-      function duplicateRow(id) {
-        const row = state.rows.find(r => r.id === id);
-        if (!row) return;
-        const data = getRowData(row.tr);
-        addRow({
-          name: data.name,
-          price: data.price,
-          pack: data.pack,
-          size: data.size,
-          unit: data.unit,
-          disc: data.disc
-        });
-      }
-
-      function sortByBest() {
-        const rows = Array.from(tbody.children);
-        rows.sort((a, b) => {
-          const ra = parseFloat(a.dataset.rank ?? 'Infinity');
-          const rb = parseFloat(b.dataset.rank ?? 'Infinity');
-          return ra - rb;
-        });
-        rows.forEach(r => tbody.appendChild(r));
-      }
-
-      function save() {
-        const data = {
-          compareBy: compareBy.value,
-          rows: state.rows.map(r => {
-            const d = getRowData(r.tr);
-            return {
-              name: d.name,
-              price: d.price,
-              pack: d.pack,
-              size: d.size,
-              unit: d.unit,
-              disc: d.disc
-            };
-          })
+        
+        const unitFamilies = {
+            'oz': 'weight',
+            'lb': 'weight',
+            'g': 'weight',
+            'kg': 'weight',
+            'fl oz': 'volume',
+            'cup': 'volume',
+            'pt': 'volume',
+            'qt': 'volume',
+            'gal': 'volume',
+            'ml': 'volume',
+            'l': 'volume',
+            'ct': 'count'
         };
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {}
-      }
-      function load() {
-        try {
-          const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-          if (!data) return;
-          compareBy.value = data.compareBy || 'per_oz';
-          (data.rows || []).forEach(r => addRow(r));
-        } catch (e) {}
-      }
-
-      function clearAll() {
-        state.rows.forEach(r => r.tr.remove());
-        state.rows = [];
-        recalc();
-        save();
-      }
-
-      // --- Events ---
-      document.getElementById('addRow').addEventListener('click', () => addRow());
-      document.getElementById('sortAsc').addEventListener('click', sortByBest);
-      document.getElementById('clearAll').addEventListener('click', () => {
-        if (confirm('Clear all items?')) clearAll();
-      });
-      compareBy.addEventListener('change', recalc);
-
-      // --- Init ---
-      load();
-      if (state.rows.length === 0) {
-        addRow({ name: 'Cereal A', price: 3.99, pack: 1, size: 18, unit: 'oz' });
-        addRow({ name: 'Cereal B', price: 5.49, pack: 1, size: 24, unit: 'oz' });
-      }
-    })();
-  </script>
+        
+        const baseUnits = {
+            'weight': 'oz',
+            'volume': 'fl oz',
+            'count': 'ct'
+        };
+        
+        function addRow() {
+            const tbody = document.getElementById('productBody');
+            const newRow = document.createElement('tr');
+            newRow.setAttribute('data-row', rowCounter);
+            newRow.innerHTML = `
+                <td><input type="text" placeholder="e.g., Product Name" oninput="calculate()"></td>
+                <td><input type="number" step="0.01" min="0" placeholder="0.00" oninput="calculate()"></td>
+                <td><input type="number" step="1" min="1" value="1" oninput="calculate()"></td>
+                <td><input type="number" step="0.01" min="0" placeholder="0" oninput="calculate()"></td>
+                <td>
+                    <select onchange="calculate()">
+                        <option value="">Select unit</option>
+                        <optgroup label="Weight">
+                            <option value="oz">Ounces (oz)</option>
+                            <option value="lb">Pounds (lb)</option>
+                            <option value="g">Grams (g)</option>
+                            <option value="kg">Kilograms (kg)</option>
+                        </optgroup>
+                        <optgroup label="Volume">
+                            <option value="fl oz">Fluid Ounces (fl oz)</option>
+                            <option value="cup">Cups</option>
+                            <option value="pt">Pints (pt)</option>
+                            <option value="qt">Quarts (qt)</option>
+                            <option value="gal">Gallons (gal)</option>
+                            <option value="ml">Milliliters (ml)</option>
+                            <option value="l">Liters (l)</option>
+                        </optgroup>
+                        <optgroup label="Count">
+                            <option value="ct">Count (ct)</option>
+                        </optgroup>
+                    </select>
+                </td>
+                <td class="unit-price">-</td>
+                <td><button class="remove-btn" onclick="removeRow(${rowCounter})">Remove</button></td>
+            `;
+            tbody.appendChild(newRow);
+            rowCounter++;
+        }
+        
+        function removeRow(rowNum) {
+            const rows = document.querySelectorAll('#productBody tr');
+            if (rows.length > 1) {
+                const row = document.querySelector(`tr[data-row="${rowNum}"]`);
+                if (row) {
+                    row.remove();
+                    calculate();
+                }
+            } else {
+                alert('You must have at least one product to compare!');
+            }
+        }
+        
+        function calculate() {
+            const rows = document.querySelectorAll('#productBody tr');
+            const products = [];
+            
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input, select');
+                const name = inputs[0].value;
+                const price = parseFloat(inputs[1].value);
+                const packs = parseFloat(inputs[2].value) || 1;
+                const size = parseFloat(inputs[3].value);
+                const unit = inputs[4].value;
+                
+                if (price > 0 && size > 0 && unit) {
+                    const totalSize = size * packs;
+                    const family = unitFamilies[unit];
+                    const baseUnit = baseUnits[family];
+                    const sizeInBaseUnit = totalSize * conversions[unit];
+                    const unitPrice = price / sizeInBaseUnit;
+                    
+                    products.push({
+                        row: row,
+                        name: name || 'Unnamed Product',
+                        unitPrice: unitPrice,
+                        baseUnit: baseUnit,
+                        family: family
+                    });
+                }
+            });
+            
+            // Group by family and find best in each
+            const families = {};
+            products.forEach(p => {
+                if (!families[p.family]) families[p.family] = [];
+                families[p.family].push(p);
+            });
+            
+            // Clear all highlights
+            rows.forEach(row => {
+                const cell = row.querySelector('.unit-price');
+                cell.classList.remove('best-value');
+                cell.innerHTML = '-';
+            });
+            
+            // Highlight best in each family
+            Object.values(families).forEach(group => {
+                if (group.length > 0) {
+                    const best = group.reduce((min, p) => p.unitPrice < min.unitPrice ? p : min);
+                    
+                    group.forEach(p => {
+                        const cell = p.row.querySelector('.unit-price');
+                        const displayPrice = `$${p.unitPrice.toFixed(4)} / ${p.baseUnit}`;
+                        
+                        if (p === best && group.length > 1) {
+                            cell.innerHTML = `${displayPrice}<span class="winner-badge">BEST!</span>`;
+                            cell.classList.add('best-value');
+                        } else {
+                            cell.innerHTML = displayPrice;
+                        }
+                    });
+                }
+            });
+        }
+    </script>
 </body>
 </html>
