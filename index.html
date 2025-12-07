@@ -556,9 +556,9 @@
         
         <button class="add-btn" onclick="addProduct()">➕ Add Another Product</button>
         
-        <div class="share-section" id="shareSection" style="display: none;">
-            <h3>🎉 Share Your Best Value Find!</h3>
-            <p style="margin-bottom: 15px; font-size: 0.9em;">Help others save money too!</p>
+        <div class="share-section" id="shareSection">
+            <h3 id="shareTitle">🎉 Share This Tool & Save Together!</h3>
+            <p id="shareSubtitle" style="margin-bottom: 15px; font-size: 0.9em;">Help friends and family find the best grocery deals!</p>
             <div class="share-buttons">
                 <button class="share-btn facebook" onclick="shareToFacebook()">
                     📘 Facebook
@@ -755,18 +755,18 @@
                     <div class="input-row">
                         <div class="input-group">
                             <label class="input-label">Price ($)</label>
-                            <input type="number" step="0.01" min="0" placeholder="0.00" oninput="calculate()" data-field="price">
+                            <input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" oninput="calculate()" data-field="price">
                         </div>
                         <div class="input-group">
                             <label class="input-label">Packs</label>
-                            <input type="number" step="1" min="1" value="1" oninput="calculate()" data-field="packs">
+                            <input type="number" inputmode="numeric" step="1" min="1" value="1" oninput="calculate()" data-field="packs">
                         </div>
                     </div>
                     
                     <div class="input-row">
                         <div class="input-group">
                             <label class="input-label">Size per Pack</label>
-                            <input type="number" step="0.01" min="0" placeholder="0" oninput="calculate()" data-field="size">
+                            <input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0" oninput="calculate()" data-field="size">
                         </div>
                         <div class="input-group">
                             <label class="input-label">Unit</label>
