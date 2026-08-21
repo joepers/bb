@@ -128,44 +128,91 @@ footer {
     font-size: 0.9rem;
 }
 
+  .beach-form {
+    width: min(100%, 560px);
+    padding: 28px;
+    border: 1px solid #bce5e8;
+    border-radius: 20px;
+    background: linear-gradient(160deg, #fffdf2, #e7fafa);
+    color: #164b5c;
+    font-family: system-ui, sans-serif;
+    box-shadow: 0 18px 45px rgba(17, 104, 125, 0.18);
+  }
+
+  .beach-form h2 {
+    margin: 0 0 22px;
+    color: #087f8c;
+  }
+
+  .beach-form label {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+
+  .date-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .beach-form input,
+  .beach-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #8fcfd4;
+    border-radius: 10px;
+    background: white;
+    color: #173f4b;
+    font: inherit;
+  }
+
+  .beach-form textarea {
+    resize: vertical;
+  }
+
+  .beach-form input:focus,
+  .beach-form textarea:focus {
+    border-color: #00a7b5;
+    outline: 3px solid rgba(0, 167, 181, 0.2);
+  }
+
+  .form-error {
+    min-height: 1.25em;
+    color: #b83232;
+    font-weight: 700;
+  }
+
   .beach-text-button {
+    width: 100%;
     padding: 14px 24px;
     border: 2px solid #fff4d6;
     border-radius: 999px;
     background: linear-gradient(135deg, #00bcd4, #087fbb);
     color: white;
-    font: 700 1rem/1.2 system-ui, sans-serif;
-    letter-spacing: 0.02em;
+    font: 700 1rem system-ui, sans-serif;
     cursor: pointer;
-    box-shadow:
-      0 6px 0 #075f82,
-      0 12px 24px rgba(0, 102, 153, 0.28);
-    transition:
-      transform 160ms ease,
-      box-shadow 160ms ease,
-      filter 160ms ease;
+    box-shadow: 0 6px 0 #075f82;
+    transition: transform 160ms ease, filter 160ms ease;
   }
 
   .beach-text-button:hover {
     filter: brightness(1.08);
     transform: translateY(-2px);
-    box-shadow:
-      0 8px 0 #075f82,
-      0 16px 28px rgba(0, 102, 153, 0.34);
   }
 
   .beach-text-button:active {
     transform: translateY(4px);
-    box-shadow:
-      0 2px 0 #075f82,
-      0 7px 14px rgba(0, 102, 153, 0.25);
+    box-shadow: 0 2px 0 #075f82;
   }
 
-  .beach-text-button:focus-visible {
-    outline: 4px solid #ffd166;
-    outline-offset: 4px;
+  @media (max-width: 520px) {
+    .date-fields {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
   }
-
 </style>
   </head>
 
@@ -174,22 +221,113 @@ footer {
   <h2>New Heated Pool for 2027 !</h2>
 
 <p>Call or Text Sue at 609-605-9263 to request rates for your dates ! <img src='sue.jpg'>
-<button class="beach-text-button" type="button" onclick="textOwner()">Text owner</button>
+<p>We are now accepting reservations for your 2027 family vacation !
+<p>213 N 6th St, Surf City, NJ 08008
+<form id="rentalInquiryForm" class="beach-form">
+  <h2>Rental inquiry</h2>
+
+  <label>
+    Name
+    <input id="guestName" name="name" type="text" autocomplete="name" required>
+  </label>
+
+  <div class="date-fields">
+    <label>
+      Check-in
+      <input id="checkin" name="checkin" type="date" required>
+    </label>
+
+    <label>
+      Check-out
+      <input id="checkout" name="checkout" type="date" required>
+    </label>
+  </div>
+
+  <label>
+    Total guests
+    <input
+      id="totalGuests"
+      name="totalGuests"
+      type="number"
+      min="1"
+      step="1"
+      value="1"
+      required
+    >
+  </label>
+
+  <label>
+    Brief message
+    <textarea
+      id="guestMessage"
+      name="message"
+      rows="4"
+      maxlength="300"
+      placeholder="Tell us a little about your stay"
+    ></textarea>
+  </label>
+
+  <p id="formError" class="form-error" role="alert"></p>
+
+  <button class="beach-text-button" type="submit">
+    🐚 Send rental inquiry
+  </button>
+</form>
 
 <script>
-  function textOwner() {
-    const phone = "+16096059263";
-    const message = "Hi Sue, I'd like to rent your vacation home !";
-    const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "&" : "?";
+  const inquiryForm = document.getElementById("rentalInquiryForm");
+  const checkinInput = document.getElementById("checkin");
+  const checkoutInput = document.getElementById("checkout");
+  const formError = document.getElementById("formError");
+
+  // Prevent selecting dates earlier than today.
+  const today = new Date().toISOString().split("T")[0];
+  checkinInput.min = today;
+  checkoutInput.min = today;
+
+  checkinInput.addEventListener("change", () => {
+    checkoutInput.min = checkinInput.value || today;
+
+    if (checkoutInput.value && checkoutInput.value <= checkinInput.value) {
+      checkoutInput.value = "";
+    }
+  });
+
+  inquiryForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    formError.textContent = "";
+
+    if (!inquiryForm.reportValidity()) return;
+
+    const name = document.getElementById("guestName").value.trim();
+    const checkin = checkinInput.value;
+    const checkout = checkoutInput.value;
+    const guests = document.getElementById("totalGuests").value;
+    const message = document.getElementById("guestMessage").value.trim();
+
+    if (checkout <= checkin) {
+      formError.textContent = "Check-out must be after check-in.";
+      return;
+    }
+
+    const smsMessage = [
+      "Hi, I'd like to rent your home.",
+      "",
+      `Name: ${name}`,
+      `Check-in: ${checkin}`,
+      `Check-out: ${checkout}`,
+      `Total guests: ${guests}`,
+      `Message: ${message || "No additional message"}`
+    ].join("\n");
+
+    const phone = "+16095551212";
+    const isAppleDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isAppleDevice ? "&" : "?";
 
     window.location.href =
-      `sms:${phone}${separator}body=${encodeURIComponent(message)}`;
-  }
+      `sms:${phone}${separator}body=${encodeURIComponent(smsMessage)}`;
+  });
 </script>
-<p>We are now accepting reservations for your 2027 family vacation !
-
-<p>213 N 6th St, Surf City, NJ 08008
-
 <p>New construction, an open floor plan, vaulted ceilings, and colors to match the coast, it feels like a refreshing day at the beach, where it's always sunny and 75 !
 
 <p>3 minute walk to the beach and Wally’s. A short distance to pickleball, tennis courts, playgrounds, and ballfields. There is something for everyone, and priceless memories !
