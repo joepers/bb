@@ -127,6 +127,45 @@ footer {
     margin: 50px 0 20px;
     font-size: 0.9rem;
 }
+
+  .beach-text-button {
+    padding: 14px 24px;
+    border: 2px solid #fff4d6;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #00bcd4, #087fbb);
+    color: white;
+    font: 700 1rem/1.2 system-ui, sans-serif;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow:
+      0 6px 0 #075f82,
+      0 12px 24px rgba(0, 102, 153, 0.28);
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      filter 160ms ease;
+  }
+
+  .beach-text-button:hover {
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 0 #075f82,
+      0 16px 28px rgba(0, 102, 153, 0.34);
+  }
+
+  .beach-text-button:active {
+    transform: translateY(4px);
+    box-shadow:
+      0 2px 0 #075f82,
+      0 7px 14px rgba(0, 102, 153, 0.25);
+  }
+
+  .beach-text-button:focus-visible {
+    outline: 4px solid #ffd166;
+    outline-offset: 4px;
+  }
+
 </style>
   </head>
 
@@ -135,7 +174,7 @@ footer {
   <h2>New Heated Pool for 2027 !</h2>
 
 <p>Call or Text Sue at 609-605-9263 to request rates for your dates ! <img src='sue.jpg'>
-<button type="button" onclick="textOwner()">Text owner</button>
+<button class="beach-text-button" type="button" onclick="textOwner()">Text owner</button>
 
 <script>
   function textOwner() {
