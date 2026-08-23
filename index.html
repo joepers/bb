@@ -265,6 +265,26 @@ footer {
     color: #087f8c;
     font-weight: 700;
   }
+    .favorite-image {
+    display: block;
+    width: 50%;
+    height: auto;
+    margin-inline: auto;
+  }
+
+  /* iPad and smaller tablets */
+  @media (max-width: 1024px) {
+    .favorite-image {
+      width: 75%;
+    }
+  }
+
+  /* iPhone and similar phones */
+  @media (max-width: 600px) {
+    .favorite-image {
+      width: 100%;
+    }
+  }
 </style>
   </head>
 
@@ -272,7 +292,14 @@ footer {
     <img src='SCS.png' class='logo'>
   <h2>New Heated Pool for 2027 !</h2>
 
-<p>Call or Text Sue at 609-605-9263 to book your Surf City NJ family vacation ! <p><img src='fav.jpg'>
+<p>Call or Text Sue at 609-605-9263 to book your Surf City NJ family vacation ! 
+  <p><img
+  class="favorite-image"
+  src="fav.jpg"
+  alt="Guest favorite rental rating and host information"
+  width="1360"
+  height="588"
+>
 <h2>
 <a
   href="https://share.google/I5cBLtszw3dO7DQ7x"
