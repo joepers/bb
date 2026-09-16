@@ -285,6 +285,100 @@ footer {
       width: 100%;
     }
   }
+  .summer-availability {
+    max-width: 760px;
+    margin: 40px auto;
+    padding: 32px;
+    background: #fff;
+    border: 1px solid #e6e6e6;
+    border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.07);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  .summer-availability h2 {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: 28px;
+    letter-spacing: .5px;
+  }
+
+  .availability-subhead {
+    text-align: center;
+    margin: 0 0 26px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .availability-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 12px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .availability-row.available {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .availability-row.booked {
+    color: #999;
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+  }
+
+  .availability-row .dates {
+    flex: 1;
+  }
+
+  .availability-row .status {
+    font-size: 13px;
+    letter-spacing: .8px;
+  }
+
+  .availability-row .price {
+    min-width: 90px;
+    text-align: right;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .availability-footer {
+    margin-top: 24px;
+    text-align: center;
+  }
+
+  .availability-footer strong {
+    display: block;
+    font-size: 19px;
+    margin-bottom: 6px;
+  }
+
+  .availability-footer small {
+    color: #666;
+  }
+
+  @media (max-width: 600px) {
+    .summer-availability {
+      padding: 22px 16px;
+    }
+
+    .availability-row {
+      flex-wrap: wrap;
+      gap: 5px 12px;
+    }
+
+    .availability-row .dates {
+      flex-basis: 65%;
+    }
+
+    .availability-row .price {
+      margin-left: auto;
+    }
+  }
 </style>
   </head>
 
@@ -295,18 +389,80 @@ footer {
 <p>Call or Text Sue at 609-605-9263 to book your Surf City NJ family vacation ! 
 <p>
 <h2>2027 Summer Availability</h2>
-June 12 – June 19 — BOOKED
-June 19 - June 26 — AVAILABLE — $7,000
-June 26 - July 3 — AVAILABLE — $7,000 
-July 3 – July 10 — BOOKED 
-July 10 – July 17 — BOOKED 
-July 17 – July 24 — BOOKED 
-July 24 – July 31 — BOOKED
-July 31 – August 7 — BOOKED
-August 7 – August 14 — BOOKED
-August 14 – August 21 — BOOKED
-August 21 - August 28 — AVAILABLE — $7,000
-August 28 - September 4 — AVAILABLE — $7,000 
+<section class="summer-availability">
+  <p class="availability-subhead">
+    Only 4 summer weeks remain.
+  </p>
+
+  <div class="availability-row booked">
+    <span class="dates">June 12 – June 19</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row available">
+    <span class="dates">June 19 – June 26</span>
+    <span class="status">AVAILABLE</span>
+    <span class="price">$7,495</span>
+  </div>
+
+  <div class="availability-row available">
+    <span class="dates">June 26 – July 3</span>
+    <span class="status">AVAILABLE</span>
+    <span class="price">$7,995</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">July 3 – July 10</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">July 10 – July 17</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">July 17 – July 24</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">July 24 – July 31</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">July 31 – August 7</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">August 7 – August 14</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row booked">
+    <span class="dates">August 14 – August 21</span>
+    <span class="status">BOOKED</span>
+  </div>
+
+  <div class="availability-row available">
+    <span class="dates">August 21 – August 28</span>
+    <span class="status">AVAILABLE</span>
+    <span class="price">$7,495</span>
+  </div>
+
+  <div class="availability-row available">
+    <span class="dates">August 28 – September 4</span>
+    <span class="status">AVAILABLE</span>
+    <span class="price">$6,995</span>
+  </div>
+
+  <div class="availability-footer">
+    <strong>Only 4 summer weeks remain.</strong>
+    <small>Rates are for a 7-night stay.</small>
+  </div>
+</section>
   <p><img
   class="favorite-image"
   src="fav.png"
